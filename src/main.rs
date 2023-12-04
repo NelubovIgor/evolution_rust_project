@@ -1,11 +1,13 @@
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color, Mesh, Drawable, Rect};
+use ggez::graphics::{self, Color, Mesh, Drawable};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
-use rand::Rng;
+// use rand::Rng;
 
 mod agents;
 use agents::Agent;
+mod weeds;
+use weeds::Weed;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
@@ -17,10 +19,6 @@ fn main() {
     event::run(ctx, event_loop, my_game);
 }
 
-struct Weed {
-    rect: Rect,
-}
-
 struct MyGame {
     agent: Agent,
     weeds: Vec<Weed>,
@@ -30,18 +28,7 @@ impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         let agent = agents::Agent::make_agent();
 
-        let mut weeds = Vec::new();
-
-        while 20 > weeds.len() {
-            let x = rand::thread_rng().gen_range(0..500) as f32;
-            let y = rand::thread_rng().gen_range(0..500) as f32;
-            let weed = Weed {
-                rect: Rect::new(x, y, 3.0, 3.0),
-            };
-            weeds.push(weed);
-            
-        }
-
+        let weeds = weeds::Weed::make_weed();
 
         MyGame {
             agent,
@@ -70,7 +57,7 @@ impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-
+        // agents::Agent::check_collision(&mut self);
         Ok(())
 
     }

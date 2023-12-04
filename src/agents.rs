@@ -1,7 +1,7 @@
 use ggez::graphics::{self, Rect, Drawable, Mesh, Color, Canvas};
-use ggez::input::keyboard::{KeyCode, KeyboardContext, KeyInput};
+use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
-use ggez::{Context, GameResult};
+use ggez::{Context};
 
 #[derive(Debug)]
 pub struct Agent {
