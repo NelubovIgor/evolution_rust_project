@@ -68,23 +68,9 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // println!("Вывод: {:?}", &mut self.agent);
 
-        // println!("{}", self);
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-        // let k_ctx = &_ctx.keyboard;
-        // if k_ctx.is_key_pressed(KeyCode::D) {
-        //     self.agent.rect.x += 1.0;
-        // }
-        // else if k_ctx.is_key_pressed(KeyCode::A) {
-        //     self.agent.rect.x -= 1.0;
-        // }
-        // else if k_ctx.is_key_pressed(KeyCode::S) {
-        //     self.agent.rect.y += 1.0;
-        // }
-        // else if k_ctx.is_key_pressed(KeyCode::W) {
-        //     self.agent.rect.y -= 1.0;
-        // }
+
         Ok(())
 
     }
@@ -104,6 +90,7 @@ impl EventHandler for MyGame {
         canvas.finish(ctx)
     }
 
+    
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         match input.keycode {
             Some(KeyCode::D) => {}

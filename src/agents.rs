@@ -1,7 +1,7 @@
 use ggez::graphics::{self, Rect, Drawable, Mesh, Color, Canvas};
-use ggez::input::keyboard::{KeyCode, KeyboardContext};
+use ggez::input::keyboard::{KeyCode, KeyboardContext, KeyInput};
 use rand::Rng;
-use ggez::Context;
+use ggez::{Context, GameResult};
 
 #[derive(Debug)]
 pub struct Agent {
@@ -39,4 +39,31 @@ impl Agent {
             rect.y -= 1.0;
         }
     }
+
+    // fn key_down_event_agent(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+    //     match input.keycode {
+    //         Some(KeyCode::D) => {}
+    //         Some(KeyCode::A) => {}
+    //         Some(KeyCode::S) => {}
+    //         Some(KeyCode::W) => {}
+    //         _ => (),
+    //     }
+    //     Ok(())
+    // }
+
+    // fn check_collision(&mut self) {
+    //     let player_rect = self.player_rect();
+    //     let mut indexes_to_remove = Vec::new();
+    //     for (i, gr) in &self.grass.iter().enumerate() {
+    //         let rectangle_rect = gr.dimensions();
+    //         if player_rect.overlaps(&rectangle_rect) {
+    //             indexes_to_remove.push(i);
+    //         }
+    //     }
+
+    //     for index in indexes_to_remove.iter().rev() {
+    //         self.grass.remove(*index);
+    //         // self.agent_score += 1;
+    //     }
+    // }
 }
