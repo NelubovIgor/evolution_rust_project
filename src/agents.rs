@@ -53,7 +53,7 @@ impl Agent {
     //     Ok(())
     // }
 
-    pub fn check_collision(agent: &Agent, weeds: &mut Vec<Weed>) {
+    pub fn check_collision(agent: &Agent, weeds: &mut Vec<Weed>) -> Vec<usize> {
         let player_rect = agent.rect;
         let mut indexes_to_remove = Vec::new();
         for (i, gr) in weeds.iter().enumerate() {
@@ -62,9 +62,6 @@ impl Agent {
                 indexes_to_remove.push(i);
             }
         }
-
-        for index in indexes_to_remove.iter().rev() {
-            weeds.remove(*index);
-        }
+        indexes_to_remove
     }
 }
