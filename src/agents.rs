@@ -3,6 +3,8 @@ use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
 use ggez::{Context};
 
+use crate::Weed;
+
 #[derive(Debug)]
 pub struct Agent {
     pub rect: Rect,
@@ -51,19 +53,18 @@ impl Agent {
     //     Ok(())
     // }
 
-    // fn check_collision(&mut self) {
-    //     let player_rect = self.player_rect();
-    //     let mut indexes_to_remove = Vec::new();
-    //     for (i, gr) in &self.grass.iter().enumerate() {
-    //         let rectangle_rect = gr.dimensions();
-    //         if player_rect.overlaps(&rectangle_rect) {
-    //             indexes_to_remove.push(i);
-    //         }
-    //     }
+    pub fn check_collision(agent: &Agent, weeds: &mut Vec<Weed>) {
+        let player_rect = agent.rect;
+        let mut indexes_to_remove = Vec::new();
+        for (i, gr) in weeds.iter().enumerate() {
+            let rectangle_rect = gr.rect;
+            if player_rect.overlaps(&rectangle_rect) {
+                indexes_to_remove.push(i);
+            }
+        }
 
-    //     for index in indexes_to_remove.iter().rev() {
-    //         self.grass.remove(*index);
-    //         // self.agent_score += 1;
-    //     }
-    // }
+        for index in indexes_to_remove.iter().rev() {
+            weeds.remove(*index);
+        }
+    }
 }

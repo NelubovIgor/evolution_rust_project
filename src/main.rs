@@ -36,28 +36,13 @@ impl MyGame {
         }
     }
 
-    // fn check_collision(&mut self) {
-    //     let player_rect = self.player_rect();
-    //     let mut indexes_to_remove = Vec::new();
-    //     for (i, gr) in &self.grass.iter().enumerate() {
-    //         let rectangle_rect = gr.dimensions();
-    //         if player_rect.overlaps(&rectangle_rect) {
-    //             indexes_to_remove.push(i);
-    //         }
-    //     }
-
-    //     for index in indexes_to_remove.iter().rev() {
-    //         self.grass.remove(*index);
-    //         self.agent_score += 1;
-    //     }
-    // }
 }
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-        // agents::Agent::check_collision(&mut self);
+        agents::Agent::check_collision(&self.agent, &mut self.weeds);
         Ok(())
 
     }
