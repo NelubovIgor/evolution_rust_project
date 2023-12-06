@@ -11,6 +11,7 @@ use weeds::Weed;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
+        .window_mode(ggez::conf::WindowMode::default().dimensions(500.0, 500.0))
         .build()
         .expect("aieee, could not create ggez context!");
 
