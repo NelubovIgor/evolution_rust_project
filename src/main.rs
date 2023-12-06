@@ -4,14 +4,15 @@ use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
 // use rand::Rng;
 
+mod constants;
 mod agents;
 use agents::Agent;
 mod weeds;
 use weeds::Weed;
 
 fn main() {
-    let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
-        .window_mode(ggez::conf::WindowMode::default().dimensions(500.0, 500.0))
+    let (mut ctx, event_loop) = ContextBuilder::new("Evolution", "Igor")
+        .window_mode(ggez::conf::WindowMode::default().dimensions(constants::WIDTH, constants::HEIGHT))
         .build()
         .expect("aieee, could not create ggez context!");
 
