@@ -4,18 +4,24 @@ use rand::Rng;
 use ggez::{Context};
 
 use crate::Weed;
+use crate::constants;
 
 #[derive(Debug)]
 pub struct Agent {
     pub rect: Rect,
+    // energy: f32,
+    // vision_area: i8,
 }
 
 impl Agent {
     pub fn make_agent() -> Agent {
-        let x = rand::thread_rng().gen_range(0..500) as f32;
-        let y = rand::thread_rng().gen_range(0..500) as f32;
+        let x = rand::thread_rng().gen_range(0..constants::WIDTH as u32) as f32;
+        let y = rand::thread_rng().gen_range(0..constants::HEIGHT as u32) as f32;
         Agent {
-            rect: Rect::new(x, y, 3.0, 3.0),
+            rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
+            // energy: 100.0,
+            // touch_area: Rect::new(),
+            // vision_area: 3,
         }
     }
 
@@ -42,15 +48,54 @@ impl Agent {
         }
     }
 
-    // fn key_down_event_agent(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
-    //     match input.keycode {
-    //         Some(KeyCode::D) => {}
-    //         Some(KeyCode::A) => {}
-    //         Some(KeyCode::S) => {}
-    //         Some(KeyCode::W) => {}
-    //         _ => (),
+    pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
+        let mut index = 0;
+        let mut min_distance = f32::MAX;
+        for (i, w) in weeds.iter().enumerate() {
+            let dx = (bot.x - w.rect.x).abs();
+            let dy = (bot.y - w.rect.y).abs();
+            let distance = (dx.powi(2) + dy.powi(2)).sqrt();
+            if distance < min_distance {
+                index = i;
+                min_distance = distance;
+            }
+        }
+
+        // Вычисляем вектор направления от bot к weeds[index]
+        let mut direction_x = weeds[index].rect.x - bot.x;
+        let mut direction_y = weeds[index].rect.y - bot.y;
+        // Вычисляем длину вектора направления
+        let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
+        // Нормализуем вектор направления, деля его на длину
+        direction_x /= length;
+        direction_y /= length;
+        // Прибавляем вектор направления к координатам bot
+        bot.x += direction_x;
+        bot.y += direction_y;
+
+
+        // if weeds[index].rect.x.is_normal() {
+        //     let wx = weeds[index].rect.x / weeds[index].rect.x.abs();
+        //     bot.x += wx;
+        // }
+
+        // if weeds[index].rect.y.is_normal() {
+        //     let wy = weeds[index].rect.y / weeds[index].rect.y.abs();
+        //     bot.y += wy;
+        // }
+    }
+
+    // pub fn do_agent(&mut self) {
+    //     self.energy -= 0.1;
+    //     if self.energy > 0 {
+    //         self.touch(&mut self)
+    //     } else {
+    //         true
     //     }
-    //     Ok(())
+    // }
+
+    // fn touch() {
+    //     let cells =
     // }
 
     pub fn check_collision(agent: &Agent, weeds: &mut Vec<Weed>) -> Vec<usize> {
@@ -65,3 +110,5 @@ impl Agent {
         indexes_to_remove
     }
 }
+
+

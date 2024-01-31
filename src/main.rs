@@ -9,6 +9,8 @@ mod agents;
 use agents::Agent;
 mod weeds;
 use weeds::Weed;
+mod world;
+// use world::World;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("Evolution", "Igor")
@@ -23,12 +25,21 @@ fn main() {
 
 struct MyGame {
     agent: Agent,
+    agents: Vec<Agent>,
     weeds: Vec<Weed>,
+    // world: Vec<world::Objects>,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
+        // let world = world::World::make_cells();
+
         let agent = agents::Agent::make_agent();
+        
+        let mut agents = Vec::new();
+        while 5 > agents.len() {
+            agents.push(agents::Agent::make_agent());
+        }
 
         let mut weeds = Vec::new();
         while 20 > weeds.len() {
@@ -37,6 +48,7 @@ impl MyGame {
 
         MyGame {
             agent,
+            agents,
             weeds,
         }
     }
@@ -45,6 +57,16 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+        // for (i, a) in self.agents.iter()enumerate() {
+        //     let dead = agents::Agent::do_agent(a);
+        //     if dead {
+        //         self.agents.remove(i);
+        //     }
+        // }
+
+        for b in self.agents.iter_mut() {
+            agents::Agent::move_bot(&mut b.rect, &self.weeds);
+        }
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
         let indexes_to_remove = agents::Agent::check_collision(&self.agent, &mut self.weeds);
@@ -60,6 +82,13 @@ impl EventHandler for MyGame {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
+
+        for a in &self.agents {
+            let agents = Mesh::new_rectangle(
+                ctx, graphics::DrawMode::fill(), a.rect, Color::RED,
+            ).unwrap();
+            Drawable::draw(&agents, &mut canvas, graphics::DrawParam::default());
+        }
 
         for w in &self.weeds {
             let weed = Mesh::new_rectangle(
