@@ -32,6 +32,56 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
+    // pub fn do_agent(&mut self) {
+    //     self.energy -= 0.1;
+    //     if self.energy > 0 {
+    //         self.touch(&mut self)
+    //     } else {
+    //         true
+    //     }
+    // }
+
+    // fn touch() {
+    //     let cells =
+    // }
+
+    pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
+        let mut index = 0;
+        let mut min_distance = f32::MAX;
+        for (i, w) in weeds.iter().enumerate() {
+            let dx = (bot.x - w.rect.x).abs();
+            let dy = (bot.y - w.rect.y).abs();
+            let distance = (dx.powi(2) + dy.powi(2)).sqrt();
+            if distance < min_distance {
+                index = i;
+                min_distance = distance;
+            }
+        }
+        // Вычисляем вектор направления от bot к weeds[index]
+        let mut direction_x = weeds[index].rect.x - bot.x;
+        let mut direction_y = weeds[index].rect.y - bot.y;
+        // Вычисляем длину вектора направления
+        let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
+        // Нормализуем вектор направления, деля его на длину
+        direction_x /= length;
+        direction_y /= length;
+        // Прибавляем вектор направления к координатам bot
+        bot.x += direction_x;
+        bot.y += direction_y;
+    }
+
+    pub fn check_collision(agent: &Rect, weeds: &Vec<Weed>) -> Vec<usize> {
+        let player_rect = agent;
+        let mut indexes_to_remove = Vec::new();
+        for (i, gr) in weeds.iter().enumerate() {
+            let rectangle_rect = gr.rect;
+            if player_rect.overlaps(&rectangle_rect) {
+                indexes_to_remove.push(i);
+            }
+        }
+        indexes_to_remove
+    }
+
     pub fn move_agent(rect: &mut Rect, _ctx: &KeyboardContext) {
         let k_ctx = &_ctx;
         if k_ctx.is_key_pressed(KeyCode::D) {
@@ -47,68 +97,5 @@ impl Agent {
             rect.y -= 1.0;
         }
     }
-
-    pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
-        let mut index = 0;
-        let mut min_distance = f32::MAX;
-        for (i, w) in weeds.iter().enumerate() {
-            let dx = (bot.x - w.rect.x).abs();
-            let dy = (bot.y - w.rect.y).abs();
-            let distance = (dx.powi(2) + dy.powi(2)).sqrt();
-            if distance < min_distance {
-                index = i;
-                min_distance = distance;
-            }
-        }
-
-        // Вычисляем вектор направления от bot к weeds[index]
-        let mut direction_x = weeds[index].rect.x - bot.x;
-        let mut direction_y = weeds[index].rect.y - bot.y;
-        // Вычисляем длину вектора направления
-        let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
-        // Нормализуем вектор направления, деля его на длину
-        direction_x /= length;
-        direction_y /= length;
-        // Прибавляем вектор направления к координатам bot
-        bot.x += direction_x;
-        bot.y += direction_y;
-
-
-        // if weeds[index].rect.x.is_normal() {
-        //     let wx = weeds[index].rect.x / weeds[index].rect.x.abs();
-        //     bot.x += wx;
-        // }
-
-        // if weeds[index].rect.y.is_normal() {
-        //     let wy = weeds[index].rect.y / weeds[index].rect.y.abs();
-        //     bot.y += wy;
-        // }
-    }
-
-    // pub fn do_agent(&mut self) {
-    //     self.energy -= 0.1;
-    //     if self.energy > 0 {
-    //         self.touch(&mut self)
-    //     } else {
-    //         true
-    //     }
-    // }
-
-    // fn touch() {
-    //     let cells =
-    // }
-
-    pub fn check_collision(agent: &Agent, weeds: &mut Vec<Weed>) -> Vec<usize> {
-        let player_rect = agent.rect;
-        let mut indexes_to_remove = Vec::new();
-        for (i, gr) in weeds.iter().enumerate() {
-            let rectangle_rect = gr.rect;
-            if player_rect.overlaps(&rectangle_rect) {
-                indexes_to_remove.push(i);
-            }
-        }
-        indexes_to_remove
-    }
 }
-
 

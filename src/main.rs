@@ -69,7 +69,14 @@ impl EventHandler for MyGame {
         }
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-        let indexes_to_remove = agents::Agent::check_collision(&self.agent, &mut self.weeds);
+        // let check_rect = 
+        let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
+        for b in self.agents.iter() {            
+            let check_remove = agents::Agent::check_collision(&b.rect, &self.weeds);
+            if !check_remove.is_empty() {
+                indexes_to_remove.extend(check_remove)
+            }
+        }
         if !indexes_to_remove.is_empty() {
             for index in indexes_to_remove.iter().rev() {
                 self.weeds.remove(*index);
