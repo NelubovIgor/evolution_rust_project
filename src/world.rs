@@ -1,5 +1,12 @@
 // use crate::constants;
+// use crate::agents::Agent;
 
+
+// let agent: Agent;
+
+// agent = crate::agent;
+
+// let mut agent: Option<> = None;
 // let mut world = Vec::new();
 
 // struct EmptyCell {
@@ -10,17 +17,6 @@
 
 // impl World {
 //     pub fn make_cells() {
-//         for pos in 0..constants::WIDTH * constants::HEIGHT {
-//             let x = pos % constants::HEIGHT;
-//             let y = pos / constants::WIDTH;
-//             change_cell(obj: Objects);
-//             let obj = Objects::EmptyCell {
-//                 pos,
-//                 x,
-//                 y,
-//             };
-//             world.push(obj)
-//         }
-//         world
+//         let agent: Option<> = None;
 //     }
 // }

@@ -9,8 +9,8 @@ mod agents;
 use agents::Agent;
 mod weeds;
 use weeds::Weed;
-mod world;
-// use world::World;
+// mod world;
+// use crate::World;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("Evolution", "Igor")
@@ -33,8 +33,8 @@ struct MyGame {
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         // let world = world::World::make_cells();
-
         let agent = agents::Agent::make_agent();
+        // let agent = agents::Agent::make_agent();
         
         let mut agents = Vec::new();
         while 5 > agents.len() {
@@ -57,19 +57,16 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        // for (i, a) in self.agents.iter()enumerate() {
-        //     let dead = agents::Agent::do_agent(a);
-        //     if dead {
-        //         self.agents.remove(i);
-        //     }
-        // }
-
-        for b in self.agents.iter_mut() {
-            agents::Agent::move_bot(&mut b.rect, &self.weeds);
+        let mut dead_bot = Vec::new();
+        for (i, a) in self.agents.iter_mut().enumerate() {
+            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot);
         }
 
+        // for b in self.agents.iter_mut() {
+        //     agents::Agent::move_bot(&mut b.rect, &self.weeds);
+        // }
+
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-        // let check_rect = 
         let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
         for b in self.agents.iter() {            
             let check_remove = agents::Agent::check_collision(&b.rect, &self.weeds);

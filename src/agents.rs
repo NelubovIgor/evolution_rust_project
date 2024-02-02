@@ -9,7 +9,7 @@ use crate::constants;
 #[derive(Debug)]
 pub struct Agent {
     pub rect: Rect,
-    // energy: f32,
+    energy: f32,
     // vision_area: i8,
 }
 
@@ -19,7 +19,7 @@ impl Agent {
         let y = rand::thread_rng().gen_range(0..constants::HEIGHT as u32) as f32;
         Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
-            // energy: 100.0,
+            energy: 100.0,
             // touch_area: Rect::new(),
             // vision_area: 3,
         }
@@ -32,14 +32,14 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
-    // pub fn do_agent(&mut self) {
-    //     self.energy -= 0.1;
-    //     if self.energy > 0 {
-    //         self.touch(&mut self)
-    //     } else {
-    //         true
-    //     }
-    // }
+    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>) {
+        self.energy -= 0.1;
+        if self.energy > 0.0 {
+            Agent::move_bot(&mut self.rect, weeds);
+        } else {
+            dead_bot.push(i);
+        }
+    }
 
     // fn touch() {
     //     let cells =
