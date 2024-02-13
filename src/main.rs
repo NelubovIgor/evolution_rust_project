@@ -9,8 +9,8 @@ mod agents;
 use agents::Agent;
 mod weeds;
 use weeds::Weed;
-// mod world;
-// use crate::World;
+mod world;
+use world::World;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("Evolution", "Igor")
@@ -27,26 +27,27 @@ struct MyGame {
     agent: Agent,
     agents: Vec<Agent>,
     weeds: Vec<Weed>,
-    // world: Vec<world::Objects>,
+    world: Vec<World>,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
-        // let world = world::World::make_cells();
-        let agent = agents::Agent::make_agent();
+        let mut world = world::World::make_cells();
+        let agent = agents::Agent::make_agent(&mut world);
         // let agent = agents::Agent::make_agent();
         
         let mut agents = Vec::new();
         while 5 > agents.len() {
-            agents.push(agents::Agent::make_agent());
+            agents.push(agents::Agent::make_agent(&mut world));
         }
 
         let mut weeds = Vec::new();
         while 20 > weeds.len() {
-            weeds.push(weeds::Weed::make_weed());
+            weeds.push(weeds::Weed::make_weed(&mut world));
         }
 
         MyGame {
+            world,
             agent,
             agents,
             weeds,
@@ -59,12 +60,14 @@ impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         let mut dead_bot = Vec::new();
         for (i, a) in self.agents.iter_mut().enumerate() {
-            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot);
+            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &self.world);
         }
-
-        // for b in self.agents.iter_mut() {
-        //     agents::Agent::move_bot(&mut b.rect, &self.weeds);
-        // }
+        if !dead_bot.is_empty() {
+            for bot in dead_bot.iter() {
+                self.agents.remove(*bot as usize);
+                self.agents.push(agents::Agent::make_agent(&mut self.world));
+            }
+        }
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
         let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
@@ -77,7 +80,7 @@ impl EventHandler for MyGame {
         if !indexes_to_remove.is_empty() {
             for index in indexes_to_remove.iter().rev() {
                 self.weeds.remove(*index);
-                self.weeds.push(weeds::Weed::make_weed());
+                self.weeds.push(weeds::Weed::make_weed(&mut self.world));
             }
         }
         Ok(())
