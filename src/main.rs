@@ -24,6 +24,7 @@ fn main() {
 }
 
 struct MyGame {
+    cycle_count: u32,
     agent: Agent,
     agents: Vec<Agent>,
     weeds: Vec<Weed>,
@@ -35,18 +36,19 @@ impl MyGame {
         let mut world = world::World::make_cells();
         let agent = agents::Agent::make_agent(&mut world);
         // let agent = agents::Agent::make_agent();
-        
+        let cycle_count = 0;
         let mut agents = Vec::new();
-        while 5 > agents.len() {
+        while 4 > agents.len() {
             agents.push(agents::Agent::make_agent(&mut world));
         }
 
         let mut weeds = Vec::new();
-        while 20 > weeds.len() {
-            weeds.push(weeds::Weed::make_weed(&mut world));
+        while 1 > weeds.len() {
+            weeds.push(weeds::Weed::make_weed(&mut world, None, None));
         }
 
         MyGame {
+            cycle_count,
             world,
             agent,
             agents,
@@ -58,16 +60,34 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+        self.cycle_count += 1;
         let mut dead_bot = Vec::new();
-        for (i, a) in self.agents.iter_mut().enumerate() {
-            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &self.world);
+        let mut grow_plat = Vec::new();
+
+        if self.cycle_count % 200 == 0 {
+            for w in self.weeds.iter() {
+                let plant: Option<Weed> = weeds::Weed::grow_weed(w, &mut self.world);
+                if let Some(weed) = plant {
+                    grow_plat.push(weed);
+                }
+            }
         }
+
+        if !grow_plat.is_empty() {
+            self.weeds.append(&mut grow_plat);
+        }
+
+        for (i, a) in self.agents.iter_mut().enumerate() {
+            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &mut self.world);
+        }
+
         if !dead_bot.is_empty() {
             for bot in dead_bot.iter() {
                 self.agents.remove(*bot as usize);
-                self.agents.push(agents::Agent::make_agent(&mut self.world));
+                // self.agents.push(agents::Agent::make_agent(&mut self.world));
             }
         }
+
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
         let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
@@ -80,7 +100,7 @@ impl EventHandler for MyGame {
         if !indexes_to_remove.is_empty() {
             for index in indexes_to_remove.iter().rev() {
                 self.weeds.remove(*index);
-                self.weeds.push(weeds::Weed::make_weed(&mut self.world));
+                // self.weeds.push(weeds::Weed::make_weed(&mut self.world));
             }
         }
         Ok(())

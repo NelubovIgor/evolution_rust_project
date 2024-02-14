@@ -1,7 +1,7 @@
 use ggez::graphics::{self, Rect, Drawable, Mesh, Color, Canvas};
 use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
-use rand::seq::SliceRandom;
+// use rand::seq::SliceRandom;
 use ggez::{Context};
 
 use crate::World;
@@ -26,7 +26,7 @@ impl Agent {
         cell.color = 'c';
         let agent = Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
-            energy: 10.0,
+            energy: 100.0,
             pos: possition,
             vision_area: 10,
             color: 'c',
@@ -41,7 +41,7 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
-    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &Vec<World>) {
+    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>) {
         self.energy -= 0.1;
         if self.energy > 0.0 {
             // let (feel_weed, feel_agent, feel_path) = Agent::touch(&self, world);
@@ -61,7 +61,7 @@ impl Agent {
             //     }
             // }
 
-            Agent::move_bot(&mut self.rect, weeds);
+            // Agent::move_bot(&mut self.rect, weeds);
         } else {
             dead_bot.push(i);
         }
