@@ -61,7 +61,7 @@ impl Agent {
             //     }
             // }
 
-            // Agent::move_bot(&mut self.rect, weeds);
+            Agent::move_bot(&mut self.rect, weeds);
         } else {
             dead_bot.push(i);
         }
