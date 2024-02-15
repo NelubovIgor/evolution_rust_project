@@ -13,7 +13,7 @@ pub struct Agent {
     pub rect: Rect,
     energy: f32,
     pos: u32,
-    vision_area: i8,
+    vision_area: f32,
     pub color: char,
 }
 
@@ -40,7 +40,7 @@ impl Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
             energy: 100.0,
             pos: possition,
-            vision_area: 10,
+            vision_area: 10.0,
             color: 'c',
         };
         agent
@@ -113,7 +113,23 @@ impl Agent {
     } 
 
     fn vision_bot(bot: &Agent, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
-
+        let mut see_weeds = Vec::new();
+        let mut see_agents = Vec::new();
+        let left = (bot.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
+        let right = (bot.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
+        let bottom = (bot.rect.y + self.vision_area).min(constants::HEIGHT);
+        let top = (bot.rect.y - self.vision_area).max(0.0);
+        for x in left..=right {
+            for y in bottom..=top {
+                let cell = cells.iter().find(|c| c.x == x && c.y == y);
+                if cell.color == 'g' {
+                    see_weeds.push(cell);
+                } else if cell.color == 'c' {
+                    see_agents.push(cell);
+                }
+            }
+        }
+        (see_agents, see_weeds)
     }
 
     fn reproduction(bot: &Agent, agent: &World, agents: &mut Vec<Agent>, birth_place: &World) -> Agent {
@@ -147,6 +163,32 @@ impl Agent {
         bot.x += direction_x;
         bot.y += direction_y;
     }
+
+// старая версия кода движения ботов:    
+    // pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
+    //     let mut index = 0;
+    //     let mut min_distance = f32::MAX;
+    //     for (i, w) in weeds.iter().enumerate() {
+    //         let dx = (bot.x - w.rect.x).abs();
+    //         let dy = (bot.y - w.rect.y).abs();
+    //         let distance = (dx.powi(2) + dy.powi(2)).sqrt();
+    //         if distance < min_distance {
+    //             index = i;
+    //             min_distance = distance;
+    //         }
+    //     }
+    //     // Вычисляем вектор направления от bot к weeds[index]
+    //     let mut direction_x = weeds[index].rect.x - bot.x;
+    //     let mut direction_y = weeds[index].rect.y - bot.y;
+    //     // Вычисляем длину вектора направления
+    //     let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
+    //     // Нормализуем вектор направления, деля его на длину
+    //     direction_x /= length;
+    //     direction_y /= length;
+    //     // Прибавляем вектор направления к координатам bot
+    //     bot.x += direction_x;
+    //     bot.y += direction_y;
+    // }
 
 
     pub fn check_collision(agent: &Rect, weeds: &Vec<Weed>) -> Vec<usize> {
