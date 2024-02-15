@@ -139,10 +139,10 @@ impl Agent {
         Agent::make_agent(&mut self.world, birth_place.rect.x, birth_place.rect.y)
     }
 
-    pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
+    pub fn move_bot(bot: &mut Rect, cells: &Vec<World>) {
         let mut index = 0;
         let mut min_distance = f32::MAX;
-        for (i, w) in weeds.iter().enumerate() {
+        for (i, w) in cells.iter().enumerate() {
             let dx = (bot.x - w.rect.x).abs();
             let dy = (bot.y - w.rect.y).abs();
             let distance = (dx.powi(2) + dy.powi(2)).sqrt();
@@ -151,9 +151,9 @@ impl Agent {
                 min_distance = distance;
             }
         }
-        // Вычисляем вектор направления от bot к weeds[index]
-        let mut direction_x = weeds[index].rect.x - bot.x;
-        let mut direction_y = weeds[index].rect.y - bot.y;
+        // Вычисляем вектор направления от bot к cells[index]
+        let mut direction_x = cells[index].rect.x - bot.x;
+        let mut direction_y = cells[index].rect.y - bot.y;
         // Вычисляем длину вектора направления
         let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
         // Нормализуем вектор направления, деля его на длину
