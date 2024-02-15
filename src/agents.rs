@@ -1,7 +1,7 @@
 use ggez::graphics::{self, Rect, Drawable, Mesh, Color, Canvas};
 use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
-// use rand::seq::SliceRandom;
+use rand::seq::SliceRandom;
 use ggez::{Context};
 
 use crate::World;
@@ -64,14 +64,15 @@ impl Agent {
             } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
                 let birth_place = feel_path.choose(&mut rand::thread_rng());
                 let agent_sex = feel_agent.iter().max_by_key(|e| e.energy);
+                
                 Return::Agent(Agent::reproduction(&self, &agent_sex, agents, birth_place))
 
             } else if feel_path.len() == 8 {
                 let (see_agent, see_weed) = Agent::vision_bot(&self);
                 if !see_agent.is_empty() && self.energy > 200.0 {
-                    Agent::::move_bot(&mut self.rect, &see_agent); 
+                    Agent::move_bot(&mut self.rect, &see_agent); 
                 } else if !see_weed.is_empty() {
-                    Agent::::move_bot(&mut self.rect, &see_weed);
+                    Agent::move_bot(&mut self.rect, &see_weed);
                 }
             } else {
                 //sleep
@@ -84,12 +85,12 @@ impl Agent {
         }
     }
 
-    fn touch(bot: &Agent, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
+    fn touch(&self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
         let mut cells_around = Vec::new();
         for p in constants::POINTS.iter() {
             // Вычисляем новые координаты
-            let new_x = bot.rect.x as isize + p.x as isize;
-            let new_y = bot.rect.y as isize + p.y as isize;
+            let new_x = self.rect.x as isize + p.x as isize;
+            let new_y = self.rect.y as isize + p.y as isize;
     
             // Проверяем, что координаты не выходят за границы массива
             if new_x >= 0 && new_x < constants::WIDTH as isize && new_y >= 0 && new_y < constants::HEIGHT as isize {
@@ -104,23 +105,23 @@ impl Agent {
         (feel_weed, feel_agent, feel_path)
     }
 
-    fn eat(bot: &Agent, food: &World, world: &mut Vec<World>, weeds: &Vec<Weed>) -> Weed {
-        world[(bot.rect.y as f32 * constants::HEIGHT + bot.rect.x as f32) as usize].color = 'b';
+    fn eat(&self, food: &World, world: &mut Vec<World>, weeds: &Vec<Weed>) -> Weed {
+        world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize].color = 'b';
         world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize].color = 'c';
-        bot.rect.x = food.rect.x;
-        bot.rect.y = food.rect.y;
-        weeds.iter().find(|p| p.possition == food.possition)
+        self.rect.x = food.rect.x;
+        self.rect.y = food.rect.y;
+        weeds.iter().find(|p| p.pos == food.pos)
     } 
 
-    fn vision_bot(bot: &Agent, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
+    fn vision_bot(&self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
         let mut see_weeds = Vec::new();
         let mut see_agents = Vec::new();
-        let left = (bot.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
-        let right = (bot.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
-        let bottom = (bot.rect.y + self.vision_area).min(constants::HEIGHT);
-        let top = (bot.rect.y - self.vision_area).max(0.0);
-        for x in left..=right {
-            for y in bottom..=top {
+        let left = (self.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
+        let right = (self.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
+        let bottom = (self.rect.y + self.vision_area).min(constants::HEIGHT);
+        let top = (self.rect.y - self.vision_area).max(0.0);
+        for x in left as u32..=right as u32 {
+            for y in bottom as u32..=top as u32 {
                 let cell = cells.iter().find(|c| c.x == x && c.y == y);
                 if cell.color == 'g' {
                     see_weeds.push(cell);
@@ -132,10 +133,10 @@ impl Agent {
         (see_agents, see_weeds)
     }
 
-    fn reproduction(bot: &Agent, agent: &World, agents: &mut Vec<Agent>, birth_place: &World) -> Agent {
-        let a = agents.iter().find(|p| p.possition == agent.possition);
+    fn reproduction(&self, agent: &World, agents: &mut Vec<Agent>, birth_place: &World) -> Agent {
+        let a = agents.iter().find(|p| p.pos == agent.pos);
         a.energy -= 20.0;
-        bot.energy -= 80.0;
+        self.energy -= 80.0;
         Agent::make_agent(&mut self.world, birth_place.rect.x, birth_place.rect.y)
     }
 

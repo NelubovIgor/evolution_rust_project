@@ -15,7 +15,7 @@ pub struct World {
     pos: u32,
     pub x: u32,
     pub y: u32,
-    rect: Rect,
+    pub rect: Rect,
     pub color: char,
 }
 
