@@ -17,10 +17,22 @@ pub struct Agent {
     pub color: char,
 }
 
+pub enum Return {
+    Int(usize),
+    Agent(Agent),
+    Weed(Weed),
+}
+
 impl Agent {
-    pub fn make_agent(world: &mut Vec<World>) -> Agent {
-        let x = rand::thread_rng().gen_range(0..constants::WIDTH as u32) as f32;
-        let y = rand::thread_rng().gen_range(0..constants::HEIGHT as u32) as f32;
+    pub fn make_agent(world: &mut Vec<World>, x: Option<f32>, y: Option<f32>) -> Agent {
+        let x = match x {
+            Some(x) => x,
+            None => rand::thread_rng().gen_range(0..constants::WIDTH as u32) as f32,
+        };
+        let y = match y {
+            Some(y) => y,
+            None => rand::thread_rng().gen_range(0..constants::HEIGHT as u32) as f32,
+        };
         let possition = (y * constants::HEIGHT + x) as u32;
         let cell = world.get_mut(possition as usize).unwrap();
         cell.color = 'c';
@@ -41,33 +53,38 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
-    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>) {
+    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>, agents: &mut Vec<Agent>) -> Return {
         self.energy -= 0.1;
         if self.energy > 0.0 {
-            // let (feel_weed, feel_agent, feel_path) = Agent::touch(&self, world);
-            // if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
-            //     let eat_weed = feel_weed.choose(&mut rand::thread_rng());
-            //     Agent::eat(&self, eat_weed);
+            let (feel_weed, feel_agent, feel_path) = Agent::touch(&self, world);
+            if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
+                let eat_weed = feel_weed.choose(&mut rand::thread_rng());
+                Return::Weed(Agent::eat(&self, &eat_weed, world, weeds))
 
-            // } else if !feel_agent.is_empty() && self.energy > 300.0 {
-            //     Agent::reproduction(&self);
+            } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
+                let birth_place = feel_path.choose(&mut rand::thread_rng());
+                let agent_sex = feel_agent.iter().max_by_key(|e| e.energy);
+                Return::Agent(Agent::reproduction(&self, &agent_sex, agents, birth_place))
 
-            // } else if feel_path.len() == 8 {
-            //     let (see_agent, see_weed) = Agent::vision_bot(&self);
-            //     if !see_agent.is_empty() && self.energy > 300.0 {
-            //         Agent::::move_bot(&mut self.rect, &see_agent); 
-            //     } else if !see_weed.is_empty() {
-            //         Agent::::move_bot(&mut self.rect, &see_weed);
-            //     }
-            // }
+            } else if feel_path.len() == 8 {
+                let (see_agent, see_weed) = Agent::vision_bot(&self);
+                if !see_agent.is_empty() && self.energy > 200.0 {
+                    Agent::::move_bot(&mut self.rect, &see_agent); 
+                } else if !see_weed.is_empty() {
+                    Agent::::move_bot(&mut self.rect, &see_weed);
+                }
+            } else {
+                //sleep
+                self.energy += 0.05;
+            }
 
-            Agent::move_bot(&mut self.rect, weeds);
+            // Agent::move_bot(&mut self.rect, weeds);
         } else {
-            dead_bot.push(i);
+            Return::Int(i)
         }
     }
 
-    fn touch(bot: &Agent, cells: &Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
+    fn touch(bot: &Agent, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
         let mut cells_around = Vec::new();
         for p in constants::POINTS.iter() {
             // Вычисляем новые координаты
@@ -87,13 +104,24 @@ impl Agent {
         (feel_weed, feel_agent, feel_path)
     }
 
-    // fn vision_bot() {
+    fn eat(bot: &Agent, food: &World, world: &mut Vec<World>, weeds: &Vec<Weed>) -> Weed {
+        world[(bot.rect.y as f32 * constants::HEIGHT + bot.rect.x as f32) as usize].color = 'b';
+        world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize].color = 'c';
+        bot.rect.x = food.rect.x;
+        bot.rect.y = food.rect.y;
+        weeds.iter().find(|p| p.possition == food.possition)
+    } 
 
-    // }
+    fn vision_bot(bot: &Agent, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
 
-    // fn reproduction() {
+    }
 
-    // }
+    fn reproduction(bot: &Agent, agent: &World, agents: &mut Vec<Agent>, birth_place: &World) -> Agent {
+        let a = agents.iter().find(|p| p.possition == agent.possition);
+        a.energy -= 20.0;
+        bot.energy -= 80.0;
+        Agent::make_agent(&mut self.world, birth_place.rect.x, birth_place.rect.y)
+    }
 
     pub fn move_bot(bot: &mut Rect, weeds: &Vec<Weed>) {
         let mut index = 0;
@@ -120,9 +148,6 @@ impl Agent {
         bot.y += direction_y;
     }
 
-    // fn eat() {
-
-    // }
 
     pub fn check_collision(agent: &Rect, weeds: &Vec<Weed>) -> Vec<usize> {
         let player_rect = agent;

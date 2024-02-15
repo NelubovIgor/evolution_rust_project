@@ -6,7 +6,7 @@ use ggez::input::keyboard::{KeyCode, KeyInput};
 
 mod constants;
 mod agents;
-use agents::Agent;
+use agents::{Agent, Return};
 mod weeds;
 use weeds::Weed;
 mod world;
@@ -34,12 +34,12 @@ struct MyGame {
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         let mut world = world::World::make_cells();
-        let agent = agents::Agent::make_agent(&mut world);
+        let agent = agents::Agent::make_agent(&mut world, None, None);
         // let agent = agents::Agent::make_agent();
         let cycle_count = 0;
         let mut agents = Vec::new();
         while 3 > agents.len() {
-            agents.push(agents::Agent::make_agent(&mut world));
+            agents.push(agents::Agent::make_agent(&mut world, None, None));
         }
 
         let mut weeds = Vec::new();
@@ -62,10 +62,12 @@ impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.cycle_count += 1;
         let mut dead_bot = Vec::new();
+        let mut eating_weed = Vec::new();
 
         if self.cycle_count % 30 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
         }
+
         // let mut grow_plat = Vec::new();
 
         // if self.cycle_count % 200 == 0 {
@@ -81,27 +83,43 @@ impl EventHandler for MyGame {
         //     self.weeds.append(&mut grow_plat);
         // }
 
-        for (i, a) in self.agents.iter_mut().enumerate() {
-            agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &mut self.world);
+        if eating_weed.is_empty() && dead_bot.is_empty() {
+            for (i, a) in self.agents.iter_mut().enumerate() {
+                let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &mut self.world, &mut self.agents);
+                
+                match result {
+                    Return::Int(i) => dead_bot.push(i),
+                    Return::Weed(w) => eating_weed.push(w),
+                    Return::Agent(a) => self.agents.push(a),
+                }
+            }
+        }
+
+        if !eating_weed.is_empty() {
+            let _indx = eating_weed.remove(0);
+            self.weeds.remove(_indx as usize);
+            if self.weeds.is_empty() {
+                self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
+            }
         }
 
         if !dead_bot.is_empty() {
             let indx = dead_bot.remove(0);
             self.agents.remove(indx as usize);
             if self.agents.is_empty() {
-                self.agents.push(agents::Agent::make_agent(&mut self.world));
+                self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
             }
         }
 
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
         let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
-        for b in self.agents.iter() {            
-            let check_remove = agents::Agent::check_collision(&b.rect, &self.weeds);
-            if !check_remove.is_empty() {
-                indexes_to_remove.extend(check_remove)
-            }
-        }
+        // for b in self.agents.iter() {            
+        //     let check_remove = agents::Agent::check_collision(&b.rect, &self.weeds);
+        //     if !check_remove.is_empty() {
+        //         indexes_to_remove.extend(check_remove)
+        //     }
+        // }
         if !indexes_to_remove.is_empty() {
             for index in indexes_to_remove.iter().rev() {
                 self.weeds.remove(*index);
