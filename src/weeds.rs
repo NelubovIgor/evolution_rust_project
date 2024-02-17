@@ -7,7 +7,7 @@ use crate::constants;
 
 pub struct Weed {
     pub rect: Rect,
-    pos: u32,
+    pub pos: u32,
     color: char,
 }
 

@@ -12,7 +12,7 @@ use ggez::graphics::{Rect};
 
 #[derive(Clone)]
 pub struct World {
-    pos: u32,
+    pub pos: u32,
     pub x: u32,
     pub y: u32,
     pub rect: Rect,

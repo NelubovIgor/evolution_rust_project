@@ -88,9 +88,11 @@ impl EventHandler for MyGame {
                 let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &mut self.world, &mut self.agents);
                 
                 match result {
-                    Return::Int(i) => dead_bot.push(i),
+                    Return::Int(i) => dead_bot.push(i.try_into().unwrap()),
                     Return::Weed(w) => eating_weed.push(w),
                     Return::Agent(a) => self.agents.push(a),
+                    Return::Move(m) => m.energy -= 3.0,
+                    Return::Sleep(s) => s.energy += 0.05,
                 }
             }
         }

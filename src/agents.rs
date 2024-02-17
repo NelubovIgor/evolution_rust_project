@@ -3,6 +3,7 @@ use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
 use rand::seq::SliceRandom;
 use ggez::{Context};
+use std::cmp::Ordering;
 
 use crate::World;
 use crate::Weed;
@@ -11,7 +12,7 @@ use crate::constants;
 #[derive(Debug)]
 pub struct Agent {
     pub rect: Rect,
-    energy: f32,
+    pub energy: f32,
     pos: u32,
     vision_area: f32,
     pub color: char,
@@ -21,6 +22,8 @@ pub enum Return {
     Int(usize),
     Agent(Agent),
     Weed(Weed),
+    Move(Agent),
+    Sleep(Agent),
 }
 
 impl Agent {
@@ -53,35 +56,45 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
-    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>, agents: &mut Vec<Agent>) -> Return {
+    pub fn do_agent(self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>, agents: &mut Vec<Agent>) -> Return {
         self.energy -= 0.1;
         if self.energy > 0.0 {
             let (feel_weed, feel_agent, feel_path) = Agent::touch(&self, world);
+            let mut feel_agents: Vec<Agent> = Vec::new();
+            for a in feel_agent.iter() {
+                feel_agents.push(*agents.iter().find(|b| b.pos == a.pos).unwrap());
+            }
             if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
-                let eat_weed = feel_weed.choose(&mut rand::thread_rng());
+                let eat_weed = feel_weed.choose(&mut rand::thread_rng()).unwrap();
                 Return::Weed(Agent::eat(&self, &eat_weed, world, weeds))
 
-            } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
-                let birth_place = feel_path.choose(&mut rand::thread_rng());
-                let agent_sex = feel_agent.iter().max_by_key(|e| e.energy);
-                
-                Return::Agent(Agent::reproduction(&self, &agent_sex, agents, birth_place))
+            } else if !feel_agents.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
+                let birth_place = feel_path.choose(&mut rand::thread_rng()).unwrap();
+                // let agent_sex = feel_agents.iter().max_by_key(|e| e.energy);
+                let agent_sex = feel_agents.iter().max_by(|a, b| a.energy.partial_cmp(&b.energy).unwrap_or(Ordering::Equal));
+                Return::Agent(Agent::reproduction(&self, agent_sex.as_mut().unwrap(), world, birth_place))
 
             } else if feel_path.len() == 8 {
-                let (see_agent, see_weed) = Agent::vision_bot(&self);
+                let (see_agent, see_weed) = Agent::vision_bot(&self, world);
                 if !see_agent.is_empty() && self.energy > 200.0 {
-                    Agent::move_bot(&mut self.rect, &see_agent); 
+                    Agent::move_bot(&mut self.rect, &see_agent);
+                    Return::Move(self)
                 } else if !see_weed.is_empty() {
                     Agent::move_bot(&mut self.rect, &see_weed);
+                    Return::Move(self)
+                } else {
+                    //sleep
+                    Return::Sleep(self)
                 }
+
             } else {
                 //sleep
-                self.energy += 0.05;
+                Return::Sleep(self)
             }
 
             // Agent::move_bot(&mut self.rect, weeds);
         } else {
-            Return::Int(i)
+            Return::Int(i.try_into().unwrap())
         }
     }
 
@@ -110,7 +123,7 @@ impl Agent {
         world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize].color = 'c';
         self.rect.x = food.rect.x;
         self.rect.y = food.rect.y;
-        weeds.iter().find(|p| p.pos == food.pos)
+        *weeds.iter().find(|p| p.pos == food.pos).unwrap()
     } 
 
     fn vision_bot(&self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
@@ -122,7 +135,7 @@ impl Agent {
         let top = (self.rect.y - self.vision_area).max(0.0);
         for x in left as u32..=right as u32 {
             for y in bottom as u32..=top as u32 {
-                let cell = cells.iter().find(|c| c.x == x && c.y == y);
+                let cell = cells.iter().find(|c| c.x == x && c.y == y).unwrap();
                 if cell.color == 'g' {
                     see_weeds.push(cell);
                 } else if cell.color == 'c' {
@@ -133,11 +146,11 @@ impl Agent {
         (see_agents, see_weeds)
     }
 
-    fn reproduction(&self, agent: &World, agents: &mut Vec<Agent>, birth_place: &World) -> Agent {
-        let a = agents.iter().find(|p| p.pos == agent.pos);
-        a.energy -= 20.0;
+    fn reproduction(&self, agent: &mut Agent, world: &mut Vec<World>, birth_place: &World) -> Agent {
+        // let a = agents.iter().find(|p| p.pos == agent.pos);
+        agent.energy -= 20.0;
         self.energy -= 80.0;
-        Agent::make_agent(&mut self.world, birth_place.rect.x, birth_place.rect.y)
+        Agent::make_agent(world, Some(birth_place.rect.x), Some(birth_place.rect.y))
     }
 
     pub fn move_bot(bot: &mut Rect, cells: &Vec<World>) {
