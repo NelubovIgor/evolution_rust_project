@@ -91,15 +91,16 @@ impl EventHandler for MyGame {
                     Return::Int(i) => dead_bot.push(i.try_into().unwrap()),
                     Return::Weed(w) => eating_weed.push(w),
                     Return::Agent(a) => self.agents.push(a),
-                    Return::Move(m) => m.energy -= 3.0,
-                    Return::Sleep(s) => s.energy += 0.05,
+                    Return::Move(mut m) => m.energy -= 3.0,
+                    Return::Sleep(mut s) => s.energy += 0.05,
                 }
             }
         }
 
         if !eating_weed.is_empty() {
-            let _indx = eating_weed.remove(0);
-            self.weeds.remove(_indx as usize);
+            let _indx = eating_weed.remove(0).pos;
+            self.weeds.remove(_indx.try_into().unwrap());
+            // self.weeds.remove(self.weeds.iter().position(|w| w.id == _indx.id).unwrap());
             if self.weeds.is_empty() {
                 self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
             }
@@ -115,7 +116,7 @@ impl EventHandler for MyGame {
 
 
         agents::Agent::move_agent(&mut self.agent.rect, &_ctx.keyboard);
-        let mut indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
+        let indexes_to_remove = agents::Agent::check_collision(&self.agent.rect, &self.weeds);
         // for b in self.agents.iter() {            
         //     let check_remove = agents::Agent::check_collision(&b.rect, &self.weeds);
         //     if !check_remove.is_empty() {
