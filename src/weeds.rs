@@ -5,10 +5,11 @@ use rand::Rng;
 use crate::World;
 use crate::constants;
 
+#[derive(Copy, Clone)]
 pub struct Weed {
     pub rect: Rect,
     pub pos: u32,
-    color: char,
+    pub color: char,
 }
 
 impl Weed {

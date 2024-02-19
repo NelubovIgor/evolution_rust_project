@@ -16,6 +16,7 @@ pub struct World {
     pub x: u32,
     pub y: u32,
     pub rect: Rect,
+    pub energy: f32,
     pub color: char,
 }
 
@@ -30,6 +31,7 @@ impl World {
                 x: x_pos,
                 y: y_pos,
                 rect: Rect::new(x_pos as f32, y_pos as f32, constants::SIZE_CELL, constants::SIZE_CELL),
+                energy: 0.0,
                 color: 'b',
             };
             cells.push(cell)

@@ -63,6 +63,7 @@ impl EventHandler for MyGame {
         self.cycle_count += 1;
         let mut dead_bot = Vec::new();
         let mut eating_weed = Vec::new();
+        let mut new_life = Vec::new();
 
         if self.cycle_count % 30 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
@@ -85,15 +86,22 @@ impl EventHandler for MyGame {
 
         if eating_weed.is_empty() && dead_bot.is_empty() {
             for (i, a) in self.agents.iter_mut().enumerate() {
-                let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &self.weeds, &mut dead_bot, &mut self.world, &mut self.agents);
-                
+                let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.weeds, &mut self.world);
+
                 match result {
                     Return::Int(i) => dead_bot.push(i.try_into().unwrap()),
                     Return::Weed(w) => eating_weed.push(w),
-                    Return::Agent(a) => self.agents.push(a),
+                    Return::NewBot(b) => new_life.push(b),
                     Return::Move(mut m) => m.energy -= 3.0,
                     Return::Sleep(mut s) => s.energy += 0.05,
                 }
+            }
+        }
+
+        if !new_life.is_empty() {
+            for b in new_life {
+                let (x, y) = b;
+                self.agents.push(agents::Agent::make_agent(&mut self.world, Some(x), Some(y)));
             }
         }
 
@@ -107,7 +115,7 @@ impl EventHandler for MyGame {
         }
 
         if !dead_bot.is_empty() {
-            let indx = dead_bot.remove(0);
+            let indx: i32 = dead_bot.remove(0);
             self.agents.remove(indx as usize);
             if self.agents.is_empty() {
                 self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));

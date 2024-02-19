@@ -13,14 +13,14 @@ use crate::constants;
 pub struct Agent {
     pub rect: Rect,
     pub energy: f32,
-    pos: u32,
+    pub pos: u32,
     vision_area: f32,
     pub color: char,
 }
 
 pub enum Return {
     Int(usize),
-    Agent(Agent),
+    NewBot((f32, f32)),
     Weed(Weed),
     Move(Agent),
     Sleep(Agent),
@@ -39,6 +39,7 @@ impl Agent {
         let possition = (y * constants::HEIGHT + x) as u32;
         let cell = world.get_mut(possition as usize).unwrap();
         cell.color = 'c';
+        cell.energy = 100.0;
         let agent = Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
             energy: 100.0,
@@ -56,23 +57,25 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
-    pub fn do_agent(&mut self, i: i32, weeds: &Vec<Weed>, dead_bot: &mut Vec<i32>, world: &mut Vec<World>, agents: &mut Vec<Agent>) -> Return {
+    pub fn do_agent(&mut self, i: i32, weeds: &mut Vec<Weed>, world: &mut Vec<World>) -> Return {
         self.energy -= 0.1;
         if self.energy > 0.0 {
-            let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);
+            // узнаёт, что чувствует агент
+            let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);            
             let mut feel_agents: Vec<Agent> = Vec::new();
-            for a in feel_agent.iter() {
-                feel_agents.push(*agents.iter().find(|b| b.pos == a.pos).unwrap());
-            }
+            
+            // for a in feel_agent.iter() {
+            //     feel_agents.push(*agents.iter().find(|b| b.pos == a.pos).unwrap());
+            // }
             if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
                 let eat_weed = feel_weed.choose(&mut rand::thread_rng()).unwrap();
                 Return::Weed(Agent::eat(self, &eat_weed, world, weeds))
 
-            } else if !feel_agents.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
+            } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
                 let birth_place = feel_path.choose(&mut rand::thread_rng()).unwrap();
                 // let agent_sex = feel_agents.iter().max_by_key(|e| e.energy);
-                let mut agent_sex = feel_agents.iter().max_by(|a, b| a.energy.partial_cmp(&b.energy).unwrap_or(Ordering::Equal));
-                Return::Agent(Agent::reproduction(&mut self, agent_sex.as_mut().unwrap(), world, birth_place))
+                // let mut agent_sex = feel_agent.iter_mut().max_by(|a, b| a.energy.partial_cmp(&b.energy).unwrap_or(Ordering::Equal));
+                Return::NewBot(Agent::reproduction(self, birth_place))
 
             } else if feel_path.len() == 8 {
                 let (see_agent, see_weed) = Agent::vision_bot(&self, world);
@@ -118,13 +121,14 @@ impl Agent {
         (feel_weed, feel_agent, feel_path)
     }
 
-    fn eat(&mut self, food: &World, world: &mut Vec<World>, weeds: &Vec<Weed>) -> Weed {
+    fn eat(&mut self, food: &World, world: &mut Vec<World>, weeds: &mut Vec<Weed>) -> Weed {
         world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize].color = 'b';
         world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize].color = 'c';
         self.rect.x = food.rect.x;
         self.rect.y = food.rect.y;
         self.energy += 30.0;
-        *weeds.iter().find(|p| p.pos == food.pos).unwrap()
+        weeds.iter().find(|p| p.pos == food.pos).unwrap().clone()
+        // *weeds.iter().find(|p| p.pos == food.pos).unwrap()
     } 
 
     fn vision_bot(&self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
@@ -146,12 +150,12 @@ impl Agent {
         }
         (see_agents, see_weeds)
     }
-    fn reproduction(agent1: &mut Agent, agent2: &mut Agent, world: &mut Vec<World>, birth_place: &World) -> Agent {
+    fn reproduction(agent1: &mut Agent, birth_place: &World) -> (f32, f32) {
     // fn reproduction(&mut self, agent: &mut Agent, world: &mut Vec<World>, birth_place: &World) -> Agent {
         // let a = agents.iter().find(|p| p.pos == agent.pos);
-        agent2.energy -= 20.0;
+        // agent2.energy -= 20.0;
         agent1.energy -= 80.0;
-        Agent::make_agent(world, Some(birth_place.rect.x), Some(birth_place.rect.y))
+        (birth_place.rect.x, birth_place.rect.y)
     }
 
     pub fn move_bot(bot: &mut Rect, cells: &Vec<World>) {
