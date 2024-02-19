@@ -3,7 +3,7 @@ use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
 use rand::seq::SliceRandom;
 use ggez::{Context};
-use std::cmp::Ordering;
+// use std::cmp::Ordering;
 
 use crate::World;
 use crate::Weed;

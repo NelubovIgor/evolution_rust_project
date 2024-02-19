@@ -2,6 +2,8 @@ use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Color, Mesh, Drawable};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::mint;
+use nalgebra::Scale;
 // use rand::Rng;
 
 mod constants;
@@ -24,7 +26,7 @@ fn main() {
 }
 
 struct MyGame {
-    cycle_count: u32,
+    cycles: u32,
     agent: Agent,
     agents: Vec<Agent>,
     weeds: Vec<Weed>,
@@ -36,7 +38,7 @@ impl MyGame {
         let mut world = world::World::make_cells();
         let agent = agents::Agent::make_agent(&mut world, None, None);
         // let agent = agents::Agent::make_agent();
-        let cycle_count = 0;
+        let cycles = 0;
         let mut agents = Vec::new();
         while 3 > agents.len() {
             agents.push(agents::Agent::make_agent(&mut world, None, None));
@@ -48,7 +50,7 @@ impl MyGame {
         }
 
         MyGame {
-            cycle_count,
+            cycles,
             world,
             agent,
             agents,
@@ -60,12 +62,12 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        self.cycle_count += 1;
+        self.cycles += 1;
         let mut dead_bot = Vec::new();
         let mut eating_weed = Vec::new();
         let mut new_life = Vec::new();
 
-        if self.cycle_count % 30 == 0 {
+        if self.cycles % 30 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
         }
 
@@ -143,6 +145,19 @@ impl EventHandler for MyGame {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
+
+        // Создать объект Text с количеством циклов игры
+        let cycles = format!("Циклы: {}", self.cycles);
+        // let font_data = include_bytes!("/DejaVuSerif.ttf"); // Загрузить данные шрифта из файла
+        // let font = graphics::Font::from_file_data(ctx, font_data)?; // Создать шрифт из данных
+        let text = graphics::Text::new(cycles); // Создать текст без указания размера шрифта
+        // text.set_font(font, Scale::uniform(32.0)); // Установить шрифт и размер шрифта
+        // text.set_color(Color::WHITE)?; // Установить цвет текста
+        
+        // Отрисовать текст в левом верхнем углу
+        // let dest_point = mint::Point2 { x: 10.0, y: 10.0 }; // Координаты точки назначения
+        
+        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default()); // Отрисовать текст с углом поворота 0 градусов
 
         for a in &self.agents {
             let agents = Mesh::new_rectangle(
