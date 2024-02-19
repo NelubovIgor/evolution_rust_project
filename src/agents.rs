@@ -44,7 +44,7 @@ impl Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
             energy: 100.0,
             pos: possition,
-            vision_area: 10.0,
+            vision_area: 100.0,
             color: 'c',
         };
         agent
@@ -62,28 +62,33 @@ impl Agent {
         if self.energy > 0.0 {
             // узнаёт, что чувствует агент
             let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);            
-            let mut feel_agents: Vec<Agent> = Vec::new();
+            // let mut feel_agents: Vec<Agent> = Vec::new();
             
             // for a in feel_agent.iter() {
             //     feel_agents.push(*agents.iter().find(|b| b.pos == a.pos).unwrap());
             // }
             if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
+                println!("feel_weed сработал");
                 let eat_weed = feel_weed.choose(&mut rand::thread_rng()).unwrap();
                 Return::Weed(Agent::eat(self, &eat_weed, world, weeds))
 
             } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
+                println!("feel_agent сработал");
                 let birth_place = feel_path.choose(&mut rand::thread_rng()).unwrap();
                 // let agent_sex = feel_agents.iter().max_by_key(|e| e.energy);
                 // let mut agent_sex = feel_agent.iter_mut().max_by(|a, b| a.energy.partial_cmp(&b.energy).unwrap_or(Ordering::Equal));
                 Return::NewBot(Agent::reproduction(self, birth_place))
 
             } else if feel_path.len() == 8 {
-                let (see_agent, see_weed) = Agent::vision_bot(&self, world);
+
+                let (mut see_agent, mut see_weed) = Agent::vision_bot(&self, world);
                 if !see_agent.is_empty() && self.energy > 200.0 {
-                    Agent::move_bot(&mut self.rect, &see_agent);
+                    println!("see_agent сработал");
+                    Agent::move_bot(self, &mut see_agent);
                     Return::Move(*self)
                 } else if !see_weed.is_empty() {
-                    Agent::move_bot(&mut self.rect, &see_weed);
+                    println!("see_weed сработал");
+                    Agent::move_bot(self, &mut see_weed);
                     Return::Move(*self)
                 } else {
                     //sleep
@@ -102,6 +107,7 @@ impl Agent {
     }
 
     fn touch(&mut self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
+        // println!("touch сработал");
         let mut cells_around = Vec::new();
         for p in constants::POINTS.iter() {
             // Вычисляем новые координаты
@@ -122,8 +128,12 @@ impl Agent {
     }
 
     fn eat(&mut self, food: &World, world: &mut Vec<World>, weeds: &mut Vec<Weed>) -> Weed {
-        world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize].color = 'b';
-        world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize].color = 'c';
+        let old_pos = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
+        old_pos.color = 'b';
+        old_pos.energy = 0.0;
+        let new_pos = &mut world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize];
+        new_pos.color = 'c';
+        new_pos.energy = self.energy;
         self.rect.x = food.rect.x;
         self.rect.y = food.rect.y;
         self.energy += 30.0;
@@ -148,6 +158,7 @@ impl Agent {
                 }
             }
         }
+        // println!("{}", &see_weeds.len());
         (see_agents, see_weeds)
     }
     fn reproduction(agent1: &mut Agent, birth_place: &World) -> (f32, f32) {
@@ -158,29 +169,35 @@ impl Agent {
         (birth_place.rect.x, birth_place.rect.y)
     }
 
-    pub fn move_bot(bot: &mut Rect, cells: &Vec<World>) {
+    pub fn move_bot(&mut self, world: &mut Vec<World>) {
+        let old_pos = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
+        old_pos.color = 'b';
+        old_pos.energy = 0.0;
         let mut index = 0;
         let mut min_distance = f32::MAX;
-        for (i, w) in cells.iter().enumerate() {
-            let dx = (bot.x - w.rect.x).abs();
-            let dy = (bot.y - w.rect.y).abs();
+        for (i, w) in world.iter().enumerate() {
+            let dx = (self.rect.x - w.rect.x).abs();
+            let dy = (self.rect.y - w.rect.y).abs();
             let distance = (dx.powi(2) + dy.powi(2)).sqrt();
             if distance < min_distance {
                 index = i;
                 min_distance = distance;
             }
         }
-        // Вычисляем вектор направления от bot к cells[index]
-        let mut direction_x = cells[index].rect.x - bot.x;
-        let mut direction_y = cells[index].rect.y - bot.y;
+        // Вычисляем вектор направления от bot к world[index]
+        let mut direction_x = world[index].rect.x - self.rect.x;
+        let mut direction_y = world[index].rect.y - self.rect.y;
         // Вычисляем длину вектора направления
         let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
         // Нормализуем вектор направления, деля его на длину
         direction_x /= length;
         direction_y /= length;
         // Прибавляем вектор направления к координатам bot
-        bot.x += direction_x;
-        bot.y += direction_y;
+        self.rect.x += direction_x;
+        self.rect.y += direction_y;
+        let new_pos = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
+        new_pos.color = 'c';
+        new_pos.energy = self.energy;
     }
 
 // старая версия кода движения ботов:    

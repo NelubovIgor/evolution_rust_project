@@ -2,8 +2,8 @@ use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Color, Mesh, Drawable};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::mint;
-use nalgebra::Scale;
+// use ggez::mint;
+// use nalgebra::Scale;
 // use rand::Rng;
 
 mod constants;
@@ -157,7 +157,7 @@ impl EventHandler for MyGame {
         // Отрисовать текст в левом верхнем углу
         // let dest_point = mint::Point2 { x: 10.0, y: 10.0 }; // Координаты точки назначения
         
-        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default()); // Отрисовать текст с углом поворота 0 градусов
+        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default()); 
 
         for a in &self.agents {
             let agents = Mesh::new_rectangle(
