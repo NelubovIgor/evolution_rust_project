@@ -4,7 +4,7 @@ pub const WIDTH: f32 = 500.0;
 pub const HEIGHT: f32 = 500.0;
 pub const SIZE_CELL: f32 = 1.0;
 // pub static points: Vec<OPoint<i32, Const<2>>> = [
-//     point![-1, -1],
+//     point![-1, -1], 
 //     point![-1, 0],
 //     point![-1, 1],
 //     point![0, -1],

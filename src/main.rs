@@ -1,5 +1,5 @@
 use ggez::{Context, ContextBuilder, GameResult};
-use ggez::graphics::{self, Color, Mesh, Drawable};
+use ggez::graphics::{self, Color, Drawable, Mesh, Rect};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
 // use ggez::mint;
@@ -42,6 +42,7 @@ impl MyGame {
         let mut dead_bot: Vec<i32> = Vec::new();
         let cycles: u32 = 0;
         let mut agents: Vec<Agent> = Vec::new();
+
         while 6 > agents.len() {
             agents.push(agents::Agent::make_agent(&mut world, None, None));
         }
@@ -157,11 +158,11 @@ impl EventHandler for MyGame {
 
         let bot_dies: String = format!("боты ожидающие смерти: {}", self.dead_bot.len());
         let text_dead: graphics::Text = graphics::Text::new(bot_dies);
-        Drawable::draw(&text_dead, &mut canvas, graphics::DrawParam::default()); 
+        Drawable::draw(&text_dead, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 15.0, 1.0, 1.0))); 
 
         let bot_life: String = format!("живые боты: {}", self.agents.len());
         let text_life: graphics::Text = graphics::Text::new(bot_life);
-        Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default()); 
+        Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 30.0, 1.0, 1.0))); 
 
         for a in &self.agents {
             let agents: Mesh = Mesh::new_rectangle(
