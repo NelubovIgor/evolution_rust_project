@@ -83,12 +83,12 @@ impl Agent {
 
                 let (mut see_agent, mut see_weed) = Agent::vision_bot(&self, world);
                 if !see_agent.is_empty() && self.energy > 200.0 {
-                    println!("see_agent сработал");
-                    Agent::move_bot(self, &mut see_agent);
+                    // println!("see_agent сработал");
+                    Agent::move_bot(self, world, &mut see_agent);
                     Return::Move(*self)
                 } else if !see_weed.is_empty() {
-                    println!("see_weed сработал");
-                    Agent::move_bot(self, &mut see_weed);
+                    // println!("see_weed сработал");
+                    Agent::move_bot(self, world, &mut see_weed);
                     Return::Move(*self)
                 } else {
                     //sleep
@@ -141,26 +141,33 @@ impl Agent {
         // *weeds.iter().find(|p| p.pos == food.pos).unwrap()
     } 
 
-    fn vision_bot(&self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
+    fn vision_bot(&self, world: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
+        // println!("vision сработал");
         let mut see_weeds = Vec::new();
         let mut see_agents = Vec::new();
         let left = (self.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
         let right = (self.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
         let bottom = (self.rect.y + self.vision_area).min(constants::HEIGHT);
         let top = (self.rect.y - self.vision_area).max(0.0);
+        // println!("{}, {}", left, right);
         for x in left as u32..=right as u32 {
-            for y in bottom as u32..=top as u32 {
-                let cell = cells.iter().find(|c| c.x == x && c.y == y).unwrap();
-                if cell.color == 'g' {
-                    see_weeds.push(cell.clone());
-                } else if cell.color == 'c' {
-                    see_agents.push(cell.clone());
+            for y in top as u32..=bottom as u32 {
+                if let Some(cell) = world.get((y as f32 * constants::HEIGHT + x as f32) as usize) {
+                    // println!("клетка найдена: {:?}", cell);
+                    if cell.color == 'g' {
+                        // println!("видит траву");
+                        see_weeds.push(cell.clone());
+                    } else if cell.color == 'c' {
+                        // println!("видит агентов");
+                        see_agents.push(cell.clone());
+                    }
                 }
             }
         }
         // println!("{}", &see_weeds.len());
         (see_agents, see_weeds)
     }
+
     fn reproduction(agent1: &mut Agent, birth_place: &World) -> (f32, f32) {
     // fn reproduction(&mut self, agent: &mut Agent, world: &mut Vec<World>, birth_place: &World) -> Agent {
         // let a = agents.iter().find(|p| p.pos == agent.pos);
@@ -169,13 +176,13 @@ impl Agent {
         (birth_place.rect.x, birth_place.rect.y)
     }
 
-    pub fn move_bot(&mut self, world: &mut Vec<World>) {
+    pub fn move_bot(&mut self, world: &mut Vec<World>, target: &mut Vec<World>) {
         let old_pos = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
         old_pos.color = 'b';
         old_pos.energy = 0.0;
         let mut index = 0;
         let mut min_distance = f32::MAX;
-        for (i, w) in world.iter().enumerate() {
+        for (i, w) in target.iter().enumerate() {
             let dx = (self.rect.x - w.rect.x).abs();
             let dy = (self.rect.y - w.rect.y).abs();
             let distance = (dx.powi(2) + dy.powi(2)).sqrt();
@@ -185,8 +192,8 @@ impl Agent {
             }
         }
         // Вычисляем вектор направления от bot к world[index]
-        let mut direction_x = world[index].rect.x - self.rect.x;
-        let mut direction_y = world[index].rect.y - self.rect.y;
+        let mut direction_x = target[index].rect.x - self.rect.x;
+        let mut direction_y = target[index].rect.y - self.rect.y;
         // Вычисляем длину вектора направления
         let length = (direction_x.powi(2) + direction_y.powi(2)).sqrt();
         // Нормализуем вектор направления, деля его на длину

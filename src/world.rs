@@ -10,7 +10,7 @@ use ggez::graphics::{Rect};
 // let mut agent: Option<> = None;
 // let mut world = Vec::new();
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct World {
     pub pos: u32,
     pub x: u32,
@@ -19,6 +19,7 @@ pub struct World {
     pub energy: f32,
     pub color: char,
 }
+
 
 impl World {
     pub fn make_cells() -> Vec<World> {

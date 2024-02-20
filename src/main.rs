@@ -40,12 +40,12 @@ impl MyGame {
         // let agent = agents::Agent::make_agent();
         let cycles = 0;
         let mut agents = Vec::new();
-        while 3 > agents.len() {
+        while 5 > agents.len() {
             agents.push(agents::Agent::make_agent(&mut world, None, None));
         }
 
         let mut weeds = Vec::new();
-        while 10 > weeds.len() {
+        while 100 > weeds.len() {
             weeds.push(weeds::Weed::make_weed(&mut world, None, None));
         }
 
