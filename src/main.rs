@@ -31,21 +31,23 @@ struct MyGame {
     agents: Vec<Agent>,
     weeds: Vec<Weed>,
     world: Vec<World>,
+    dead_bot: Vec<i32>,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
-        let mut world = world::World::make_cells();
-        let agent = agents::Agent::make_agent(&mut world, None, None);
-        // let agent = agents::Agent::make_agent();
-        let cycles = 0;
-        let mut agents = Vec::new();
-        while 5 > agents.len() {
+        let mut world: Vec<World> = world::World::make_cells();
+        let agent: Agent = agents::Agent::make_agent(&mut world, None, None);
+        // let agent = agents::Agent::make_agent(); 
+        let mut dead_bot: Vec<i32> = Vec::new();
+        let cycles: u32 = 0;
+        let mut agents: Vec<Agent> = Vec::new();
+        while 6 > agents.len() {
             agents.push(agents::Agent::make_agent(&mut world, None, None));
         }
 
-        let mut weeds = Vec::new();
-        while 100 > weeds.len() {
+        let mut weeds: Vec<Weed> = Vec::new();
+        while 500 > weeds.len() {
             weeds.push(weeds::Weed::make_weed(&mut world, None, None));
         }
 
@@ -55,6 +57,7 @@ impl MyGame {
             agent,
             agents,
             weeds,
+            dead_bot,
         }
     }
 
@@ -63,9 +66,9 @@ impl MyGame {
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.cycles += 1;
-        let mut dead_bot = Vec::new();
-        let mut eating_weed = Vec::new();
-        let mut new_life = Vec::new();
+        // let mut dead_bot: Vec<i32> = Vec::new();
+        let mut eating_weed: Vec<Weed> = Vec::new();
+        let mut new_life: Vec<(f32, f32)> = Vec::new();
 
         if self.cycles % 30 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
@@ -86,16 +89,16 @@ impl EventHandler for MyGame {
         //     self.weeds.append(&mut grow_plat);
         // }
 
-        if eating_weed.is_empty() && dead_bot.is_empty() {
+        if eating_weed.is_empty() && self.dead_bot.is_empty() {
             for (i, a) in self.agents.iter_mut().enumerate() {
                 let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.weeds, &mut self.world);
 
                 match result {
-                    Return::Int(i) => dead_bot.push(i.try_into().unwrap()),
+                    Return::Int(i) => self.dead_bot.push(i.try_into().unwrap()),
                     Return::Weed(w) => eating_weed.push(w),
                     Return::NewBot(b) => new_life.push(b),
-                    Return::Move(mut m) => m.energy -= 3.0,
-                    Return::Sleep(mut s) => s.energy += 0.05,
+                    Return::Move(mut m) => m.energy -= 1.0,
+                    Return::Sleep(mut s) => s.energy += 0.009,
                 }
             }
         }
@@ -108,18 +111,19 @@ impl EventHandler for MyGame {
         }
 
         if !eating_weed.is_empty() {
-            let _indx = eating_weed.remove(0).pos;
-            self.weeds.remove(_indx.try_into().unwrap());
-            // self.weeds.remove(self.weeds.iter().position(|w| w.id == _indx.id).unwrap());
+            let weed_dead: Weed = eating_weed.remove(0);
+            let indx = self.weeds.iter().position(|p| p.pos == weed_dead.pos).unwrap();
+            self.weeds.remove(indx);
             if self.weeds.is_empty() {
                 self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
             }
         }
 
-        if !dead_bot.is_empty() {
-            let indx: i32 = dead_bot.remove(0);
+        if !self.dead_bot.is_empty() {
+            let indx: i32 = self.dead_bot.remove(0);
             self.agents.remove(indx as usize);
             if self.agents.is_empty() {
+                self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
                 self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
             }
         }
@@ -147,27 +151,27 @@ impl EventHandler for MyGame {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
 
         // Создать объект Text с количеством циклов игры
-        let cycles = format!("Циклы: {}", self.cycles);
-        // let font_data = include_bytes!("/DejaVuSerif.ttf"); // Загрузить данные шрифта из файла
-        // let font = graphics::Font::from_file_data(ctx, font_data)?; // Создать шрифт из данных
-        let text = graphics::Text::new(cycles); // Создать текст без указания размера шрифта
-        // text.set_font(font, Scale::uniform(32.0)); // Установить шрифт и размер шрифта
-        // text.set_color(Color::WHITE)?; // Установить цвет текста
-        
-        // Отрисовать текст в левом верхнем углу
-        // let dest_point = mint::Point2 { x: 10.0, y: 10.0 }; // Координаты точки назначения
-        
-        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default()); 
+        let cycles: String = format!("Циклы: {}", self.cycles);
+        let text: graphics::Text = graphics::Text::new(cycles); 
+        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default());
+
+        let bot_dies: String = format!("боты ожидающие смерти: {}", self.dead_bot.len());
+        let text_dead: graphics::Text = graphics::Text::new(bot_dies);
+        Drawable::draw(&text_dead, &mut canvas, graphics::DrawParam::default()); 
+
+        let bot_life: String = format!("живые боты: {}", self.agents.len());
+        let text_life: graphics::Text = graphics::Text::new(bot_life);
+        Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default()); 
 
         for a in &self.agents {
-            let agents = Mesh::new_rectangle(
+            let agents: Mesh = Mesh::new_rectangle(
                 ctx, graphics::DrawMode::fill(), a.rect, Color::RED,
             ).unwrap();
             Drawable::draw(&agents, &mut canvas, graphics::DrawParam::default());
         }
 
         for w in &self.weeds {
-            let weed = Mesh::new_rectangle(
+            let weed: Mesh = Mesh::new_rectangle(
                 ctx, graphics::DrawMode::fill(), w.rect, Color::GREEN,
             ).unwrap();
             Drawable::draw(&weed, &mut canvas, graphics::DrawParam::default());

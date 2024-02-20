@@ -2,7 +2,7 @@ use ggez::graphics::{self, Rect, Drawable, Mesh, Color, Canvas};
 use ggez::input::keyboard::{KeyCode, KeyboardContext};
 use rand::Rng;
 use rand::seq::SliceRandom;
-use ggez::{Context};
+use ggez::Context;
 // use std::cmp::Ordering;
 
 use crate::World;
@@ -28,37 +28,37 @@ pub enum Return {
 
 impl Agent {
     pub fn make_agent(world: &mut Vec<World>, x: Option<f32>, y: Option<f32>) -> Agent {
-        let x = match x {
+        let x: f32 = match x {
             Some(x) => x,
             None => rand::thread_rng().gen_range(0..constants::WIDTH as u32) as f32,
         };
-        let y = match y {
+        let y: f32 = match y {
             Some(y) => y,
             None => rand::thread_rng().gen_range(0..constants::HEIGHT as u32) as f32,
         };
-        let possition = (y * constants::HEIGHT + x) as u32;
-        let cell = world.get_mut(possition as usize).unwrap();
+        let possition: u32 = (y * constants::HEIGHT + x) as u32;
+        let cell: &mut World = world.get_mut(possition as usize).unwrap();
         cell.color = 'c';
         cell.energy = 100.0;
-        let agent = Agent {
+        let agent: Agent = Agent {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
             energy: 100.0,
             pos: possition,
-            vision_area: 100.0,
+            vision_area: 50.0,
             color: 'c',
         };
         agent
     }
 
     pub fn draw_agent(ctx: &Context, a: Rect, canvas: &mut Canvas) {
-        let agent = Mesh::new_rectangle(
+        let agent: Mesh = Mesh::new_rectangle(
             ctx, graphics::DrawMode::fill(), a, Color::BLUE,
         ).unwrap();
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
     pub fn do_agent(&mut self, i: i32, weeds: &mut Vec<Weed>, world: &mut Vec<World>) -> Return {
-        self.energy -= 0.1;
+        self.energy -= 0.01;
         if self.energy > 0.0 {
             // узнаёт, что чувствует агент
             let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);            
@@ -68,13 +68,13 @@ impl Agent {
             //     feel_agents.push(*agents.iter().find(|b| b.pos == a.pos).unwrap());
             // }
             if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
-                println!("feel_weed сработал");
-                let eat_weed = feel_weed.choose(&mut rand::thread_rng()).unwrap();
+                // println!("feel_weed сработал");
+                let eat_weed: &World = feel_weed.choose(&mut rand::thread_rng()).unwrap();
                 Return::Weed(Agent::eat(self, &eat_weed, world, weeds))
 
             } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
-                println!("feel_agent сработал");
-                let birth_place = feel_path.choose(&mut rand::thread_rng()).unwrap();
+                // println!("feel_agent сработал");
+                let birth_place: &World = feel_path.choose(&mut rand::thread_rng()).unwrap();
                 // let agent_sex = feel_agents.iter().max_by_key(|e| e.energy);
                 // let mut agent_sex = feel_agent.iter_mut().max_by(|a, b| a.energy.partial_cmp(&b.energy).unwrap_or(Ordering::Equal));
                 Return::NewBot(Agent::reproduction(self, birth_place))
@@ -108,7 +108,7 @@ impl Agent {
 
     fn touch(&mut self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
         // println!("touch сработал");
-        let mut cells_around = Vec::new();
+        let mut cells_around: Vec<&World> = Vec::new();
         for p in constants::POINTS.iter() {
             // Вычисляем новые координаты
             let new_x = self.rect.x as isize + p.x as isize;
@@ -116,7 +116,7 @@ impl Agent {
     
             // Проверяем, что координаты не выходят за границы массива
             if new_x >= 0 && new_x < constants::WIDTH as isize && new_y >= 0 && new_y < constants::HEIGHT as isize {
-                let cell = &cells[(new_y as f32 * constants::HEIGHT + new_x as f32) as usize];
+                let cell: &World = &cells[(new_y as f32 * constants::HEIGHT + new_x as f32) as usize];
                 cells_around.push(cell);
             }
         }
@@ -128,27 +128,29 @@ impl Agent {
     }
 
     fn eat(&mut self, food: &World, world: &mut Vec<World>, weeds: &mut Vec<Weed>) -> Weed {
-        let old_pos = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
+        // println!("eat сработал");
+        let old_pos: &mut World = &mut world[(self.rect.y as f32 * constants::HEIGHT + self.rect.x as f32) as usize];
         old_pos.color = 'b';
         old_pos.energy = 0.0;
-        let new_pos = &mut world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize];
+        let new_pos: &mut World = &mut world[(food.rect.y as f32 * constants::HEIGHT + food.rect.x as f32) as usize];
         new_pos.color = 'c';
         new_pos.energy = self.energy;
         self.rect.x = food.rect.x;
         self.rect.y = food.rect.y;
-        self.energy += 30.0;
-        weeds.iter().find(|p| p.pos == food.pos).unwrap().clone()
+        self.energy += 160.0;
+        // println!("и тут код крашится");
+        weeds.iter().find(|p: &&Weed| p.pos == food.pos).unwrap().clone()
         // *weeds.iter().find(|p| p.pos == food.pos).unwrap()
     } 
 
     fn vision_bot(&self, world: &mut Vec<World>) -> (Vec<World>, Vec<World>) {
         // println!("vision сработал");
-        let mut see_weeds = Vec::new();
-        let mut see_agents = Vec::new();
-        let left = (self.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
-        let right = (self.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
-        let bottom = (self.rect.y + self.vision_area).min(constants::HEIGHT);
-        let top = (self.rect.y - self.vision_area).max(0.0);
+        let mut see_weeds: Vec<World> = Vec::new();
+        let mut see_agents: Vec<World> = Vec::new();
+        let left: f32 = (self.rect.x - self.vision_area).max(0.0); // метод выбора максимального значения
+        let right: f32 = (self.rect.x + self.vision_area).min(constants::WIDTH); // метод выбора минимального значения
+        let bottom: f32 = (self.rect.y + self.vision_area).min(constants::HEIGHT);
+        let top: f32 = (self.rect.y - self.vision_area).max(0.0);
         // println!("{}, {}", left, right);
         for x in left as u32..=right as u32 {
             for y in top as u32..=bottom as u32 {
@@ -158,7 +160,7 @@ impl Agent {
                         // println!("видит траву");
                         see_weeds.push(cell.clone());
                     } else if cell.color == 'c' {
-                        // println!("видит агентов");
+                        // println!("видит агентов"); 
                         see_agents.push(cell.clone());
                     }
                 }
