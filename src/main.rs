@@ -2,8 +2,7 @@ use ggez::{Context, ContextBuilder, GameResult};
 use ggez::graphics::{self, Color, Drawable, Mesh, Rect};
 use ggez::event::{self, EventHandler};
 use ggez::input::keyboard::{KeyCode, KeyInput};
-// use ggez::mint;
-// use nalgebra::Scale;
+use nalgebra::geometry::Point2;
 // use rand::Rng;
 
 mod constants;
@@ -32,25 +31,31 @@ struct MyGame {
     weeds: Vec<Weed>,
     world: Vec<World>,
     dead_bot: Vec<i32>,
+    eating_weed: Vec<Point2<f32>>,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         let mut world: Vec<World> = world::World::make_cells();
         let agent: Agent = agents::Agent::make_agent(&mut world, None, None);
-        // let agent = agents::Agent::make_agent(); 
-        let mut dead_bot: Vec<i32> = Vec::new();
+        let eating_weed: Vec<Point2<f32>> = Vec::new();
+        let dead_bot: Vec<i32> = Vec::new();
         let cycles: u32 = 0;
         let mut agents: Vec<Agent> = Vec::new();
-
-        while 6 > agents.len() {
-            agents.push(agents::Agent::make_agent(&mut world, None, None));
-        }
-
         let mut weeds: Vec<Weed> = Vec::new();
-        while 500 > weeds.len() {
-            weeds.push(weeds::Weed::make_weed(&mut world, None, None));
-        }
+
+        weeds.push(weeds::Weed::make_weed(&mut world, Some(80.0), Some(150.0)));
+        weeds.push(weeds::Weed::make_weed(&mut world, Some(40.0), Some(150.0)));
+        agents.push(agents::Agent::make_agent(&mut world, Some(0.0), Some(150.0)));
+
+        // while 1 > agents.len() {
+        //     agents.push(agents::Agent::make_agent(&mut world, None, None));
+        // }
+
+
+        // while 100 > weeds.len() {
+        //     weeds.push(weeds::Weed::make_weed(&mut world, None, None));
+        // }
 
         MyGame {
             cycles,
@@ -59,6 +64,7 @@ impl MyGame {
             agents,
             weeds,
             dead_bot,
+            eating_weed,
         }
     }
 
@@ -68,10 +74,10 @@ impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.cycles += 1;
         // let mut dead_bot: Vec<i32> = Vec::new();
-        let mut eating_weed: Vec<Weed> = Vec::new();
-        let mut new_life: Vec<(f32, f32)> = Vec::new();
+        // let mut eating_weed: Vec<Weed> = Vec::new();
+        let mut new_life: Vec<(Point2<f32>, Point2<f32>, Point2<f32>)> = Vec::new();
 
-        if self.cycles % 30 == 0 {
+        if self.cycles % 10 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
         }
 
@@ -90,43 +96,58 @@ impl EventHandler for MyGame {
         //     self.weeds.append(&mut grow_plat);
         // }
 
-        if eating_weed.is_empty() && self.dead_bot.is_empty() {
+        // if self.eating_weed.is_empty() && self.dead_bot.is_empty() {
             for (i, a) in self.agents.iter_mut().enumerate() {
-                let result = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.weeds, &mut self.world);
+                let result: Return = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.world);
 
                 match result {
                     Return::Int(i) => self.dead_bot.push(i.try_into().unwrap()),
-                    Return::Weed(w) => eating_weed.push(w),
+                    Return::Weed(w) => self.eating_weed.push(w),
                     Return::NewBot(b) => new_life.push(b),
                     Return::Move(mut m) => m.energy -= 1.0,
-                    Return::Sleep(mut s) => s.energy += 0.009,
+                    Return::Sleep(mut s) => s.energy += 0.08,
                 }
             }
-        }
+        // }
 
         if !new_life.is_empty() {
-            for b in new_life {
-                let (x, y) = b;
-                self.agents.push(agents::Agent::make_agent(&mut self.world, Some(x), Some(y)));
+            for n in new_life {
+                let (a, ba, pa) = n;
+                let agent1: Option<&mut Agent> = self.agents.iter_mut().find(|a1: &&mut Agent| a1.rect.x == a.x && a1.rect.y == a.y);
+                if let Some(agent1) = agent1 {
+                    agent1.energy -= 80.0;
+                    let cell: &mut World = &mut self.world[(agent1.rect.x * constants::HEIGHT + agent1.rect.y) as usize];
+                    cell.energy -= 80.0;
+                }
+                let agent2: Option<&mut Agent> = self.agents.iter_mut().find(|a1: &&mut Agent| a1.rect.x == ba.x && a1.rect.y == ba.y);
+                if let Some(agent2) = agent2 {
+                    agent2.energy -= 20.0;
+                    let cell: &mut World = &mut self.world[(agent2.rect.x * constants::HEIGHT + agent2.rect.y) as usize];
+                    cell.energy -= 20.0;
+                }
+                // println!("a1-{:?} a2-{:?}", a, ba);
+                // agents::Agent::reproduction(agent1, agent2, birth_place)
+                self.agents.push(agents::Agent::make_agent(&mut self.world, Some(pa.x), Some(pa.y)));
             }
         }
 
-        if !eating_weed.is_empty() {
-            let weed_dead: Weed = eating_weed.remove(0);
-            let indx = self.weeds.iter().position(|p| p.pos == weed_dead.pos).unwrap();
+        if !self.eating_weed.is_empty() {
+            let weed_dead = self.eating_weed.remove(0);
+            let indx = self.weeds.iter().position(|w| w.rect.x == weed_dead.x && w.rect.y == weed_dead.y).unwrap();
+            // println!("съедена трава №{}", indx);
             self.weeds.remove(indx);
-            if self.weeds.is_empty() {
-                self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
-            }
+            // if self.weeds.is_empty() {
+            //     self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
+            // }
         }
 
         if !self.dead_bot.is_empty() {
             let indx: i32 = self.dead_bot.remove(0);
             self.agents.remove(indx as usize);
-            if self.agents.is_empty() {
-                self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
-                self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
-            }
+            // if self.agents.is_empty() {
+            //     self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
+            //     self.agents.push(agents::Agent::make_agent(&mut self.world, None, None));
+            // }
         }
 
 
@@ -163,6 +184,19 @@ impl EventHandler for MyGame {
         let bot_life: String = format!("живые боты: {}", self.agents.len());
         let text_life: graphics::Text = graphics::Text::new(bot_life);
         Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 30.0, 1.0, 1.0))); 
+
+        let eat: String = format!("трава на съедение: {}", self.eating_weed.len());
+        let text_eat: graphics::Text = graphics::Text::new(eat);
+        Drawable::draw(&text_eat, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 45.0, 1.0, 1.0))); 
+
+        let weeds: String = format!("травы на петри: {}", self.weeds.len());
+        let text_weeds: graphics::Text = graphics::Text::new(weeds);
+        Drawable::draw(&text_weeds, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 60.0, 1.0, 1.0))); 
+
+        let bot1: String = format!("бот координаты: {}:{}.\nenergy: {}", self.agents[0].rect.x, self.agents[0].rect.y, self.agents[0].energy);
+        let text_bot1: graphics::Text = graphics::Text::new(bot1);
+        Drawable::draw(&text_bot1, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 75.0, 1.0, 1.0))); 
+
 
         for a in &self.agents {
             let agents: Mesh = Mesh::new_rectangle(

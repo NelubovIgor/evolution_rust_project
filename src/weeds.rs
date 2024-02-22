@@ -1,6 +1,6 @@
 use ggez::graphics::{Rect};
 use rand::Rng;
-// use rand::seq::SliceRandom;
+// use rand::seq::SliceRandom; 
 
 use crate::World;
 use crate::constants;
@@ -8,7 +8,7 @@ use crate::constants;
 #[derive(Copy, Clone)]
 pub struct Weed {
     pub rect: Rect,
-    pub pos: u32,
+
     pub color: char,
 }
 
@@ -25,9 +25,8 @@ impl Weed {
         let possition = (y * constants::HEIGHT + x) as u32;
         let cell = world.get_mut(possition as usize).unwrap();
         cell.color = 'g';
-        let weed = Weed {
+        let weed: Weed = Weed {
             rect: Rect::new(x, y, constants::SIZE_CELL, constants::SIZE_CELL),
-            pos: possition,
             color: 'g',
         };
         weed

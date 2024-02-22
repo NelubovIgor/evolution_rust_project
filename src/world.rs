@@ -1,6 +1,6 @@
 use crate::constants;
 use ggez::graphics::{Rect};
-// use crate::agents::Agent;
+// use crate::agents::Agent; 
 
 
 // let agent: Agent;
@@ -13,8 +13,6 @@ use ggez::graphics::{Rect};
 #[derive(Clone, Debug)]
 pub struct World {
     pub pos: u32,
-    pub x: u32,
-    pub y: u32,
     pub rect: Rect,
     pub energy: f32,
     pub color: char,
@@ -29,8 +27,6 @@ impl World {
             let y_pos = i / constants::HEIGHT as u32;
             let cell = World {
                 pos: i,
-                x: x_pos,
-                y: y_pos,
                 rect: Rect::new(x_pos as f32, y_pos as f32, constants::SIZE_CELL, constants::SIZE_CELL),
                 energy: 0.0,
                 color: 'b',
