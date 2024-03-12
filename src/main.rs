@@ -15,7 +15,7 @@ use world::World;
 
 fn main() {
     let (mut ctx, event_loop) = ContextBuilder::new("Evolution", "Igor")
-        .window_mode(ggez::conf::WindowMode::default().dimensions(constants::WIDTH, constants::HEIGHT))
+        .window_mode(ggez::conf::WindowMode::default().dimensions(constants::MAIN_WIDTH, constants::HEIGHT))
         .build()
         .expect("aieee, could not create ggez context!");
 
@@ -25,6 +25,7 @@ fn main() {
 }
 
 struct MyGame {
+    paused: bool,
     cycles: u32,
     agent: Agent,
     agents: Vec<Agent>,
@@ -36,17 +37,30 @@ struct MyGame {
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
-        let mut world: Vec<World> = world::World::make_cells();
-        let agent: Agent = agents::Agent::make_agent(&mut world, None, None);
+        let paused = true;
+
+        let mut world: Vec<World> = Vec::new();
+        for x in 0..constants::WIDTH as u32 {
+            for y in 0..constants::HEIGHT as u32 {
+                let cell: World = world::World::make_cells(Some(x as f32), Some(y as f32));
+                world.push(cell);
+            }
+        }
+        let cycles: u32 = 0;
+        let agent: Agent = agents::Agent::make_agent(&mut world, None, None, cycles);
         let eating_weed: Vec<Point2<f32>> = Vec::new();
         let dead_bot: Vec<i32> = Vec::new();
-        let cycles: u32 = 0;
+
         let mut agents: Vec<Agent> = Vec::new();
         let mut weeds: Vec<Weed> = Vec::new();
 
-        weeds.push(weeds::Weed::make_weed(&mut world, Some(80.0), Some(150.0)));
-        weeds.push(weeds::Weed::make_weed(&mut world, Some(40.0), Some(150.0)));
-        agents.push(agents::Agent::make_agent(&mut world, Some(0.0), Some(150.0)));
+
+
+        // weeds.push(weeds::Weed::make_weed(&mut world, Some(70.0), Some(150.0)));
+        weeds.push(weeds::Weed::make_weed(&mut world, Some(90.0), Some(150.0)));
+        // agents.push(agents::Agent::make_agent(&mut world, Some(150.0), Some(150.0), cycles));
+        agents.push(agents::Agent::make_agent(&mut world, Some(250.0), Some(150.0), cycles));
+
 
         // while 1 > agents.len() {
         //     agents.push(agents::Agent::make_agent(&mut world, None, None));
@@ -58,6 +72,7 @@ impl MyGame {
         // }
 
         MyGame {
+            paused,
             cycles,
             world,
             agent,
@@ -72,6 +87,10 @@ impl MyGame {
 
 impl EventHandler for MyGame {
    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+
+        if self.paused {
+            return  Ok(());
+        }
         self.cycles += 1;
         // let mut dead_bot: Vec<i32> = Vec::new();
         // let mut eating_weed: Vec<Weed> = Vec::new();
@@ -98,7 +117,7 @@ impl EventHandler for MyGame {
 
         // if self.eating_weed.is_empty() && self.dead_bot.is_empty() {
             for (i, a) in self.agents.iter_mut().enumerate() {
-                let result: Return = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.world);
+                let result: Return = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.world, self.cycles);
 
                 match result {
                     Return::Int(i) => self.dead_bot.push(i.try_into().unwrap()),
@@ -127,18 +146,23 @@ impl EventHandler for MyGame {
                 }
                 // println!("a1-{:?} a2-{:?}", a, ba);
                 // agents::Agent::reproduction(agent1, agent2, birth_place)
-                self.agents.push(agents::Agent::make_agent(&mut self.world, Some(pa.x), Some(pa.y)));
+                self.agents.push(agents::Agent::make_agent(&mut self.world, Some(pa.x), Some(pa.y), self.cycles));
             }
         }
 
         if !self.eating_weed.is_empty() {
             let weed_dead = self.eating_weed.remove(0);
-            let indx = self.weeds.iter().position(|w| w.rect.x == weed_dead.x && w.rect.y == weed_dead.y).unwrap();
-            // println!("съедена трава №{}", indx);
-            self.weeds.remove(indx);
-            // if self.weeds.is_empty() {
-            //     self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
-            // }
+            // println!("{:?}", weed_dead);
+            let indx = self.weeds.iter().position(|w| w.rect.x == weed_dead.x && w.rect.y == weed_dead.y);
+            
+            // println!("{:?}", indx);
+            if let Some(indx)  = indx  {
+                self.weeds.remove(indx);
+                let _indx: usize = self.world.iter().position(|w| w.rect.x == weed_dead.x && w.rect.y == weed_dead.y).unwrap();
+                let cell: &mut World = &mut self.world[_indx as usize];
+                cell.type_cell = 'b';
+                cell.energy = 0.0;
+            }
         }
 
         if !self.dead_bot.is_empty() {
@@ -165,37 +189,39 @@ impl EventHandler for MyGame {
                 // self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
             }
         }
+        // self.paused = true;
         Ok(())
 
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
+        // let mut menu_canvas = graphics::Canvas::from_frame(ctx, Color::from_rgb(128, 128, 128));
 
         // Создать объект Text с количеством циклов игры
         let cycles: String = format!("Циклы: {}", self.cycles);
         let text: graphics::Text = graphics::Text::new(cycles); 
-        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default());
+        Drawable::draw(&text, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 0.0, 1.0, 1.0)));
 
         let bot_dies: String = format!("боты ожидающие смерти: {}", self.dead_bot.len());
         let text_dead: graphics::Text = graphics::Text::new(bot_dies);
-        Drawable::draw(&text_dead, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 15.0, 1.0, 1.0))); 
+        Drawable::draw(&text_dead, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 15.0, 1.0, 1.0))); 
 
         let bot_life: String = format!("живые боты: {}", self.agents.len());
         let text_life: graphics::Text = graphics::Text::new(bot_life);
-        Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 30.0, 1.0, 1.0))); 
+        Drawable::draw(&text_life, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 30.0, 1.0, 1.0))); 
 
         let eat: String = format!("трава на съедение: {}", self.eating_weed.len());
         let text_eat: graphics::Text = graphics::Text::new(eat);
-        Drawable::draw(&text_eat, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 45.0, 1.0, 1.0))); 
+        Drawable::draw(&text_eat, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 45.0, 1.0, 1.0))); 
 
         let weeds: String = format!("травы на петри: {}", self.weeds.len());
         let text_weeds: graphics::Text = graphics::Text::new(weeds);
-        Drawable::draw(&text_weeds, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 60.0, 1.0, 1.0))); 
+        Drawable::draw(&text_weeds, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 60.0, 1.0, 1.0))); 
 
         let bot1: String = format!("бот координаты: {}:{}.\nenergy: {}", self.agents[0].rect.x, self.agents[0].rect.y, self.agents[0].energy);
         let text_bot1: graphics::Text = graphics::Text::new(bot1);
-        Drawable::draw(&text_bot1, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(0.0, 75.0, 1.0, 1.0))); 
+        Drawable::draw(&text_bot1, &mut canvas, graphics::DrawParam::default().dest_rect(Rect::new(500.0, 75.0, 1.0, 1.0))); 
 
 
         for a in &self.agents {
@@ -215,11 +241,13 @@ impl EventHandler for MyGame {
         agents::Agent::draw_agent(ctx, self.agent.rect, &mut canvas);
 
         canvas.finish(ctx)
+        // menu_canvas.finish(ctx)
     }
 
     
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
         match input.keycode {
+            Some(KeyCode::Space) => {self.paused = !self.paused;}
             Some(KeyCode::D) => {}
             Some(KeyCode::A) => {}
             Some(KeyCode::S) => {}
