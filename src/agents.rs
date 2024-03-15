@@ -71,102 +71,67 @@ impl Agent {
         Drawable::draw(&agent, canvas, graphics::DrawParam::default())
     }
 
+
+    
     pub fn do_agent(&mut self, i: i32, world: &mut Vec<World>, cycles: u32) -> Return {
+        // println!("{:?}", self.rect.x);
         self.energy -= 0.1;
-        if self.energy <= 0.0 {
-            return Return::Int(i.try_into().unwrap());
-        }
-    
-        if (cycles - self.birth_day) <= 10 {
-            return Return::Sleep(*self);
-        }
-    
-        // узнаёт, что чувствует агент
-        let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);
-    
-        if !feel_weed.is_empty() {
-            let eat_weed: &World = feel_weed.choose(&mut rand::thread_rng()).unwrap();
-            return Return::Weed(Agent::eat(self, eat_weed));
-        }
-    
-        if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
-            let birth_place: &World = feel_path.choose(&mut rand::thread_rng()).unwrap();
-            let best_agent: &World = feel_agent.iter().max_by_key(|e| e.energy as i32).unwrap();
-            let bp = Point2::new(birth_place.rect.x, birth_place.rect.y);
-            let ba = Point2::new(best_agent.rect.x, best_agent.rect.y);
-            let a = Point2::new(self.rect.x, self.rect.y);
-            return Return::NewBot((a, ba, bp));
-        }
-    
-        if feel_path.len() >= 3 {
-            let (see_agent, see_weed) = Agent::vision_bot(self, world);
-    
-            if !see_agent.is_empty() && self.energy > 200.0 {
-                Agent::move_bot(self, world, see_agent);
-                return Return::Move(*self);
+        if self.energy > 0.0 && (cycles - self.birth_day) > 10 {
+            // узнаёт, что чувствует агент
+            let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);            
+
+            if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
+                // println!("{:?}", feel_weed);
+                // println!("feel_weed сработал");
+                let eat_weed: &World = feel_weed.choose(&mut rand::thread_rng()).unwrap();
+                Return::Weed(Agent::eat(self, eat_weed))
+
+            } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
+
+                let birth_place: &World = feel_path.choose(&mut rand::thread_rng()).unwrap();
+                let best_agent: &World = feel_agent.iter().max_by_key(|e| e.energy as i32).unwrap();
+                // println!("a1-{:?}, a2-{:?}", self.rect, best_agent.rect);
+                let bp: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(birth_place.rect.x, birth_place.rect.y);
+                let ba: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(best_agent.rect.x, best_agent.rect.y);
+                let a: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(self.rect.x, self.rect.y);
+                Return::NewBot((a, ba, bp))
+
+            } else if feel_path.len() >= 3 {
+                let mut see_agent_result = None;
+                let mut see_weed_result = None;
+                
+                let (see_agent, see_weed) = Agent::vision_bot(self, world);
+                if !see_agent.is_empty() && self.energy > 200.0 {
+                    see_agent_result = Some(see_agent);
+                } else if !see_weed.is_empty() {
+                    see_weed_result = Some(see_weed);
+                }
+            
+
+                // println!("свободный путь");
+                if let Some(see_agent) = see_agent_result {
+                    Agent::move_bot(self, world, see_agent);
+                    Return::Move(*self)
+                } else if let Some(see_weed) = see_weed_result {
+                    Agent::move_bot(self, world, see_weed);
+                    Return::Move(*self)
+                } else {
+                    //sleep
+                    Return::Sleep(*self)
+                }
+
+            } else {
+                //sleep
+                Return::Sleep(*self)
             }
-            if !see_weed.is_empty() {
-                Agent::move_bot(self, world, see_weed);
-                return Return::Move(*self);
-            }
+
+        } else if self.energy > 0.0 {
+            Return::Sleep(*self)
+
+        } else {
+            Return::Int(i.try_into().unwrap())
         }
-    
-        Return::Sleep(*self)
     }
-    
-
-    // pub fn do_agent(&mut self, i: i32, world: &mut Vec<World>, cycles: u32) -> Return {
-    //     // println!("{:?}", self.rect.x);
-    //     self.energy -= 0.1;
-    //     if self.energy > 0.0 && (cycles - self.birth_day) > 10 {
-    //         // узнаёт, что чувствует агент
-    //         let (feel_weed, feel_agent, feel_path) = Agent::touch(self, world);            
-
-    //         if !feel_weed.is_empty() { // ! - инвертирует запрос is_empty(), который возвращает true если список пуст
-    //             // println!("{:?}", feel_weed);
-    //             // println!("feel_weed сработал");
-    //             let eat_weed: &World = feel_weed.choose(&mut rand::thread_rng()).unwrap();
-    //             Return::Weed(Agent::eat(self, eat_weed))
-
-    //         } else if !feel_agent.is_empty() && self.energy > 200.0 && !feel_path.is_empty() {
-
-    //             let birth_place: &World = feel_path.choose(&mut rand::thread_rng()).unwrap();
-    //             let best_agent: &World = feel_agent.iter().max_by_key(|e| e.energy as i32).unwrap();
-    //             // println!("a1-{:?}, a2-{:?}", self.rect, best_agent.rect);
-    //             let bp: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(birth_place.rect.x, birth_place.rect.y);
-    //             let ba: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(best_agent.rect.x, best_agent.rect.y);
-    //             let a: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(self.rect.x, self.rect.y);
-    //             Return::NewBot((a, ba, bp))
-
-    //         } else if feel_path.len() >= 3 {
-    //             // println!("свободный путь");
-    //             let (see_agent, see_weed) = Agent::vision_bot(self, world);
-
-    //             if !see_agent.is_empty() && self.energy > 200.0 {
-    //                 // println!("see_agent сработал");
-    //                 Agent::move_bot(self, world, see_agent);
-    //                 Return::Move(*self)
-    //             } else if !see_weed.is_empty() {
-    //                 // println!("see_weed сработал");
-    //                 Agent::move_bot(self, world, see_weed);
-    //                 Return::Move(*self)
-    //             } else {
-    //                 //sleep
-    //                 Return::Sleep(*self)
-    //             }
-
-    //         } else {
-    //             //sleep
-    //             Return::Sleep(*self)
-    //         }
-
-    //     } else if self.energy > 0.0 {
-    //         Return::Sleep(*self)
-
-    //     } else {
-    //         Return::Int(i.try_into().unwrap())
-    //     }
-    // }
 
     fn touch(&mut self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
         // println!("touch сработал");
@@ -212,10 +177,10 @@ impl Agent {
         pos_food
     }
 
-    fn vision_bot(&self, world: &[World]) -> (Vec<&World>, Vec<&World>) {
+    fn vision_bot<'a>(&self, world: &'a [World]) -> (Vec<&'a World>, Vec<&'a World>) {
         // println!("vision сработал");
-        let mut see_weeds: Vec<&World> = Vec::new();
-        let mut see_agents: Vec<&World> = Vec::new();
+        let mut see_weeds: Vec<&'a World> = Vec::new();
+        let mut see_agents: Vec<&'a World> = Vec::new();
         let left = (self.rect.x - self.vision_area).max(0.0) as i32; // метод выбора максимального значения
         let right = (self.rect.x + self.vision_area).min(constants::WIDTH) as i32; // метод выбора минимального значения
         let bottom = (self.rect.y + self.vision_area).min(constants::HEIGHT) as i32;
