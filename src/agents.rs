@@ -30,7 +30,7 @@ pub enum Return {
     Int(usize),
     NewBot((Point2<f32>, Point2<f32>, Point2<f32>)),
     Weed(Point2<f32>),
-    Move(Agent),
+    Move((f32, f32, f32)),
     Sleep(Agent),
 }
 
@@ -73,7 +73,7 @@ impl Agent {
 
 
     
-    pub fn do_agent(&mut self, i: i32, world: &mut Vec<World>, cycles: u32) -> Return {
+    pub fn do_agent<'a>(&'a mut self, i: i32, world: &'a Vec<World>, cycles: u32) -> Return {
         // println!("{:?}", self.rect.x);
         self.energy -= 0.1;
         if self.energy > 0.0 && (cycles - self.birth_day) > 10 {
@@ -96,25 +96,14 @@ impl Agent {
                 let a: nalgebra::OPoint<f32, nalgebra::Const<2>> = Point2::new(self.rect.x, self.rect.y);
                 Return::NewBot((a, ba, bp))
 
-            } else if feel_path.len() >= 3 {
-                let mut see_agent_result = None;
-                let mut see_weed_result = None;
-                
+            } else if feel_path.len() >= 3 {                
                 let (see_agent, see_weed) = Agent::vision_bot(self, world);
                 if !see_agent.is_empty() && self.energy > 200.0 {
-                    see_agent_result = Some(see_agent);
-                } else if !see_weed.is_empty() {
-                    see_weed_result = Some(see_weed);
-                }
-            
 
-                // println!("свободный путь");
-                if let Some(see_agent) = see_agent_result {
-                    Agent::move_bot(self, world, see_agent);
-                    Return::Move(*self)
-                } else if let Some(see_weed) = see_weed_result {
-                    Agent::move_bot(self, world, see_weed);
-                    Return::Move(*self)
+                    Return::Move(Agent::move_bot(self, see_agent, i))
+                } else if !see_weed.is_empty() {
+
+                    Return::Move(Agent::move_bot(self, see_weed, i))
                 } else {
                     //sleep
                     Return::Sleep(*self)
@@ -133,7 +122,7 @@ impl Agent {
         }
     }
 
-    fn touch(&mut self, cells: &mut Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
+    fn touch(&self, cells: &Vec<World>) -> (Vec<World>, Vec<World>, Vec<World>) {
         // println!("touch сработал");
         let mut cells_around: Vec<World> = Vec::new();
         for p in constants::POINTS.iter() {
@@ -178,6 +167,7 @@ impl Agent {
     }
 
     fn vision_bot<'a>(&self, world: &'a [World]) -> (Vec<&'a World>, Vec<&'a World>) {
+
         // println!("vision сработал");
         let mut see_weeds: Vec<&'a World> = Vec::new();
         let mut see_agents: Vec<&'a World> = Vec::new();
@@ -217,7 +207,7 @@ impl Agent {
     // }
 
 
-    pub fn move_bot(&mut self, world: &mut Vec<World>, target: Vec<&World>) {
+    pub fn move_bot(&mut self, target: Vec<&World>, id: i32) -> (f32, f32, f32) {
         // println!("move сработал");
         // Найти индекс ближайшего элемента в target
         let mut index = 0;
@@ -241,16 +231,17 @@ impl Agent {
         direction_y /= length;
 
         // Обменять значения элементов world по индексам
-        let old_index = world.iter().position(|w| w.rect.x == self.rect.x && w.rect.y == self.rect.y).unwrap();
-        let new_index = world.iter().position(|w| w.rect.x == target[index].rect.x && w.rect.y == target[index].rect.y).unwrap();
-        world.swap(old_index, new_index);
+        // let old_index = world.iter().position(|w| w.rect.x == self.rect.x && w.rect.y == self.rect.y).unwrap();
+        // let new_index = world.iter().position(|w| w.rect.x == target[index].rect.x && w.rect.y == target[index].rect.y).unwrap();
+        // world.swap(old_index, new_index);
 
         // Прибавить вектор направления к координатам bot
-        self.rect.x = (self.rect.x + direction_x).round();
-        self.rect.y = (self.rect.y + direction_y).round();
+        let x = (self.rect.x + direction_x).round();
+        let y = (self.rect.y + direction_y).round();
         // Вывести результат
         // println!("a1-{:?}, a2-{:?}", world[old_index].rect, world[new_index].rect);
         // println!("a1-{:?}, a2-{:?}", world[old_index].color, world[new_index].color);
+        (x, y, id as f32)
     }
 
 

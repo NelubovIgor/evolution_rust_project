@@ -33,6 +33,8 @@ struct MyGame {
     world: Vec<World>,
     dead_bot: Vec<i32>,
     eating_weed: Vec<Point2<f32>>,
+    new_life: Vec<(Point2<f32>, Point2<f32>, Point2<f32>)>,
+    go_bot: Vec<(f32, f32, f32)>,
 }
 
 impl MyGame {
@@ -50,6 +52,8 @@ impl MyGame {
         let agent: Agent = agents::Agent::make_agent(&mut world, None, None, cycles);
         let eating_weed: Vec<Point2<f32>> = Vec::new();
         let dead_bot: Vec<i32> = Vec::new();
+        let new_life: Vec<(Point2<f32>, Point2<f32>, Point2<f32>)> = Vec::new();
+        let go_bot: Vec<(f32, f32, f32)> = Vec::new();
 
         let mut agents: Vec<Agent> = Vec::new();
         let mut weeds: Vec<Weed> = Vec::new();
@@ -80,6 +84,8 @@ impl MyGame {
             weeds,
             dead_bot,
             eating_weed,
+            new_life,
+            go_bot,
         }
     }
 
@@ -94,7 +100,7 @@ impl EventHandler for MyGame {
         self.cycles += 1;
         // let mut dead_bot: Vec<i32> = Vec::new();
         // let mut eating_weed: Vec<Weed> = Vec::new();
-        let mut new_life: Vec<(Point2<f32>, Point2<f32>, Point2<f32>)> = Vec::new();
+
 
         if self.cycles % 10 == 0 {
             self.weeds.push(weeds::Weed::make_weed(&mut self.world, None, None));
@@ -117,20 +123,29 @@ impl EventHandler for MyGame {
 
         // if self.eating_weed.is_empty() && self.dead_bot.is_empty() {
             for (i, a) in self.agents.iter_mut().enumerate() {
-                let result: Return = agents::Agent::do_agent(a, i.try_into().unwrap(), &mut self.world, self.cycles);
+                let result: Return = agents::Agent::do_agent(a, i.try_into().unwrap(), &self.world, self.cycles);
 
                 match result {
                     Return::Int(i) => self.dead_bot.push(i.try_into().unwrap()),
                     Return::Weed(w) => self.eating_weed.push(w),
-                    Return::NewBot(b) => new_life.push(b),
-                    Return::Move(mut m) => m.energy -= 1.0,
+                    Return::NewBot(b) => self.new_life.push(b),
+                    Return::Move(m ) => self.go_bot.push(m),
                     Return::Sleep(mut s) => s.energy += 0.08,
                 }
             }
         // }
 
-        if !new_life.is_empty() {
-            for n in new_life {
+        if !self.go_bot.is_empty() {
+            for (x, y, i) in &self.go_bot {
+                let mut bot = self.agents[*i as usize];
+                bot.rect.x = *x;
+                bot.rect.y = *y;
+                // здесь надо дописать изменения в world
+            }
+        }
+
+        if !self.new_life.is_empty() {
+            for n in &self.new_life {
                 let (a, ba, pa) = n;
                 let agent1: Option<&mut Agent> = self.agents.iter_mut().find(|a1: &&mut Agent| a1.rect.x == a.x && a1.rect.y == a.y);
                 if let Some(agent1) = agent1 {
